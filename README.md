@@ -76,7 +76,9 @@ project_root/
 │   └── ...
 │
 ├── src/
-│   └── ...
+│   └── features
+│   └── models
+│   └── visualization
 │
 ├── app/
 │   └── ...
