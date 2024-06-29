@@ -16,6 +16,10 @@ RUN apt-get update --fix-missing && apt-get install -y \
     curl \
     git \
     vim \
+    python3-pip \
+    python3-dev \
+    python3-opencv \
+    libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,19 +27,24 @@ RUN apt-get update --fix-missing && apt-get install -y \
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
     && /bin/bash ~/miniconda.sh -b -p /opt/conda \
     && rm ~/miniconda.sh \
-    && $CONDA_DIR/bin/conda clean -tipsy
+    && $CONDA_DIR/bin/conda clean -a -y
 
 # Create a new Conda environment
 COPY .devcontainer/environment.yml /tmp/environment.yml
 RUN conda env create -f /tmp/environment.yml \
-    && conda clean -a
+    && conda clean -a -y
 
 # Activate the Conda environment in all future commands
 SHELL ["conda", "run", "-n", "data_science", "/bin/bash", "-c"]
 
-# Install any additional pip packages
-COPY .devcontainer/requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
+# Ensure the Conda environment is activated by default in the container
+RUN echo "conda activate data_science" >> ~/.bashrc
+
+# Upgrade pip
+RUN pip install --upgrade pip
+
+# Install PyTorch and torchvision with CUDA support
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Set working directory
 WORKDIR /workspace

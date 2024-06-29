@@ -3,7 +3,7 @@
     // Build configuration for the Docker image
     "build": {
         // Dockerfile location
-        "dockerfile": "Dockerfile",
+        "dockerfile": ".devcontainer/Dockerfile",
         // Arguments to pass during the build
         "args": {
             "ENV_NAME": "${localEnv:PROJECT_A_NAME:my_project_name}",
