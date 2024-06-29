@@ -1,7 +1,3 @@
-Certainly! Here’s the updated README with detailed information, including the PyTorch installation and GPU support steps.
-
-### README.md
-
 # Advanced Docker Data Science Environment
 
 This README provides a comprehensive guide to setting up a robust Docker environment for data science projects with GPU support. It includes detailed explanations and best practices to help you understand each component.
