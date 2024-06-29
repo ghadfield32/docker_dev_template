@@ -3,8 +3,8 @@ version: '3.8'
 services:
   datascience:
     build: 
-      context: .  # Ensure the build context is the current directory
-      dockerfile: .devcontainer/Dockerfile  # Ensure the Dockerfile is specified correctly
+      context: .
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       - .:/workspace
     ports:
@@ -14,10 +14,11 @@ services:
       resources:
         reservations:
           devices:
-            - driver: nvidia  # Specify NVIDIA driver for GPU support
-              count: all  # Use all available GPUs
-              capabilities: [gpu]  # Set capabilities to GPU
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      - ENV_NAME=python_tutorial  # Set environment variables
+      - ENV_NAME=data_science
       - PYTHON_VER=3.10
     command: ["conda", "run", "-n", "data_science", "jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888", "--no-browser", "--allow-root"]
+    

@@ -7,14 +7,22 @@ Certainly! Here’s the updated README with detailed information, including the 
 This README provides a comprehensive guide to setting up a robust Docker environment for data science projects with GPU support. It includes detailed explanations and best practices to help you understand each component.
 
 ## Table of Contents
-1. [Prerequisites](#prerequisites)
-2. [Project Structure](#project-structure)
-3. [Dockerfile](#dockerfile)
-4. [Environment Configuration](#environment-configuration)
-5. [Docker Compose](#docker-compose)
-6. [VS Code Development Container](#vs-code-development-container)
-7. [Usage Guide](#usage-guide)
-8. [Troubleshooting](#troubleshooting)
+- [Advanced Docker Data Science Environment](#advanced-docker-data-science-environment)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Project Structure](#project-structure)
+  - [Dockerfile](#dockerfile)
+  - [Environment Configuration](#environment-configuration)
+    - [environment.yml](#environmentyml)
+    - [requirements.txt](#requirementstxt)
+  - [Docker Compose](#docker-compose)
+    - [Explanation:](#explanation)
+  - [VS Code Development Container](#vs-code-development-container)
+  - [Usage Guide](#usage-guide)
+  - [Troubleshooting](#troubleshooting)
+  - [Steps to each repo:](#steps-to-each-repo)
+- [Usage:](#usage)
+- [A Dockerized Python Development Environment Template](#a-dockerized-python-development-environment-template)
 
 ## Prerequisites
 
@@ -323,6 +331,10 @@ Remember to adjust paths, versions, and configurations according to your specifi
    - Follow the steps in the [Usage Guide](#usage-guide) to build and start the container, access Jupyter Lab, and use VS Code with the container
 
 This setup ensures that you have a robust and reproducible data science environment with GPU support, ready to be cloned and utilized for various projects. Adjust paths, versions, and configurations according to your specific needs and system setup.
+
+# Usage:
+(data_science) terminal to use jupyter lab:
+conda run -n data_science jupyter lab --ip 0.0.0.0 --port 8888 --no-browser --allow-root
 
 # A Dockerized Python Development Environment Template
 
