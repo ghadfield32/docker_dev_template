@@ -29,6 +29,9 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     && rm ~/miniconda.sh \
     && $CONDA_DIR/bin/conda clean -a -y
 
+# Initialize Conda for the shell
+RUN conda init bash
+
 # Create a new Conda environment
 COPY .devcontainer/environment.yml /tmp/environment.yml
 RUN conda env create -f /tmp/environment.yml \
