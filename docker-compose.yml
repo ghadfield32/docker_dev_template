@@ -1,0 +1,24 @@
+version: '3.8'  # Specify the version of Docker Compose file format
+
+services:
+  datascience:
+    build: .  # Context for building the Docker image is the current directory
+    volumes:
+      - .:/workspace  # Mount the current directory to /workspace in the container
+    ports:
+      - "8888:8888"  # Map port 8888 on the host to port 8888 in the container for Jupyter Notebook
+      - "6006:6006"  # Map port 6006 on the host to port 6006 in the container for TensorBoard
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia  # Specify NVIDIA driver for GPU support
+              count: all  # Use all available GPUs
+              capabilities: [gpu]  # Set capabilities to GPU
+    environment:
+      - ENV_NAME=python_tutorial  # Set environment variables
+      - PYTHON_VER=3.10
+    command: jupyter lab --ip 0.0.0.0 --port 8888 --no-browser --allow-root  # Override default command to start Jupyter Lab
+
+volumes:
+  data:  # Define a named volume (if needed for persistent storage, currently unused)

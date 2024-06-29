@@ -1,23 +1,44 @@
-# Arguments
-ARG PYTHON_VER="3.10"
-FROM python:$PYTHON_VER
+# Use NVIDIA CUDA base image for GPU support
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
-# Arguments
-ARG PYTHON_VER="3.10"
-ARG QUARTO_VER="1.3.450"
-ARG ENV_NAME="my_project"
-# Environment variables
-ENV ENV_NAME=$ENV_NAME
-ENV PYTHON_VER=$PYTHON_VER
-ENV QUARTO_VER=$QUARTO_VER
+# Prevent tzdata from asking for user input
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy files
-RUN mkdir requirements
+# Set environment variables
+ENV CONDA_DIR /opt/conda
+ENV PATH $CONDA_DIR/bin:$PATH
 
-COPY install_quarto.sh install_dependencies.sh requirements/
-RUN bash ./requirements/install_dependencies.sh
-RUN bash ./requirements/install_quarto.sh $QUARTO_VER
+# Install system dependencies
+RUN apt-get update --fix-missing && apt-get install -y \
+    wget \
+    bzip2 \
+    ca-certificates \
+    curl \
+    git \
+    vim \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY requirements.txt install_requirements.sh requirements/
-RUN bash requirements/install_requirements.sh $ENV_NAME $PYTHON_VER
+# Install Miniconda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
+    && /bin/bash ~/miniconda.sh -b -p /opt/conda \
+    && rm ~/miniconda.sh \
+    && $CONDA_DIR/bin/conda clean -tipsy
+
+# Create a new Conda environment
+COPY .devcontainer/environment.yml /tmp/environment.yml
+RUN conda env create -f /tmp/environment.yml \
+    && conda clean -a
+
+# Activate the Conda environment in all future commands
+SHELL ["conda", "run", "-n", "data_science", "/bin/bash", "-c"]
+
+# Install any additional pip packages
+COPY .devcontainer/requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+
+# Set working directory
+WORKDIR /workspace
+
+# Set the default command to bash
+CMD ["bash"]
