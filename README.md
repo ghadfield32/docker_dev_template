@@ -336,6 +336,7 @@ See also:
 - [Deploy Flexdashboard on Github Pages with Github Actions and Docker](https://github.com/RamiKrispin/deploy-flex-actions)
 - [Docker for Data Scientists 🐳](https://github.com/RamiKrispin/Introduction-to-Docker) (WIP)
 
+- [How to Install PyTorch on the GPU with Docker ](https://saturncloud.io/blog/how-to-install-pytorch-on-the-gpu-with-docker/)
 ---
 
 This comprehensive guide covers everything needed to set up and use a dockerized Python development environment with GPU support. Make sure to adapt any paths, versions, and specific configurations to fit your project requirements and system setup.
