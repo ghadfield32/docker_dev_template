@@ -1,9 +1,9 @@
-# Advanced Docker Data Science Environment
+# GPU enabled Docker Image Template
 
 This README provides a comprehensive guide to setting up a robust Docker environment for data science projects with GPU support. It includes detailed explanations and best practices to help you understand each component.
 
 ## Table of Contents
-- [Advanced Docker Data Science Environment](#advanced-docker-data-science-environment)
+- [GPU enabled Docker Image Template](#gpu-enabled-docker-image-template)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Project Structure](#project-structure)
@@ -48,9 +48,6 @@ sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
 sudo systemctl restart docker
 ```
 
-## Project Structure
-
-```
 project_root/
 │
 ├── .devcontainer/
@@ -85,6 +82,7 @@ project_root/
 ├── README.md
 │
 └── docker-compose.yml
+
 
 ```
 
