@@ -17,3 +17,7 @@ dependencies:
   - mypy
   - pip
   - seaborn  # For data visualization
+
+
+  #this environment.yml is only for streamlits and running locally, not for docker
+  
