@@ -19,3 +19,7 @@ dependencies:
   - seaborn
   - pip:
     - pretty_errors 
+    - gdown
+    - xgboost
+    - CatBoost
+    - lightgbm
