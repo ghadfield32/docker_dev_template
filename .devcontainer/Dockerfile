@@ -1,5 +1,5 @@
 # Use NVIDIA CUDA base image for GPU support
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.0.0-base-ubuntu22.04
 
 # Define ARGs
 ARG ENV_NAME=data_science_example
@@ -7,6 +7,8 @@ ARG PYTHON_VER=3.10
 
 # Prevent tzdata from asking for user input
 ENV DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
 
 # Set environment variables
 ENV CONDA_DIR=/opt/conda
@@ -25,6 +27,11 @@ RUN apt-get update --fix-missing && apt-get install -y \
     python3-dev \
     python3-opencv \
     libglib2.0-0 \
+    libstdc++6 \
+    libgcc1 \
+    libc6 \
+    libc6-dev \
+    libc-dev-bin \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
+    runtime: nvidia  # Ensure the NVIDIA runtime is used
     volumes:
       - .:/workspace
     ports:
