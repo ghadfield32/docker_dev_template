@@ -1,0 +1,22 @@
+Column,Description
+pitch_id,Unique identifier for pitch
+gamedate,Date corresponding to when the event took place
+temperature,"Integer corresponding to game start temperature, in Farenheit"
+level,String corresponding to competition level
+bat_side,String corresponding to batter handedness for the event
+pitch_side,String corresponding to pitcher handedness for the event
+inning,Integer representing the inning during which the event took place
+top,Integer representing whether the event took place during the top (1) or bottom (0) of the inning
+pre_balls,Integer representing the number of balls in the count before the pitch
+pre_strikes,Integer representing the number of strikes in the count before the pitch
+pre_outs,Integer representing the number of outs in the count before the pitch
+lf_id,Unique identifier for the left fielder
+cf_id,Unique identifier for the center fielder
+rf_id,Unique identifier for the right fielder
+venue_id,Unique identifier for the stadium
+exit_speed,"Float representing the speed at which the ball left the bat, in miles per hour"
+vert_exit_angle,"Float representing the vertical angle at which the ball left the bat, in degrees"
+horz_exit_angle,"Float representing the horizontal angle at which the ball left the bat, in degrees"
+hit_spin_rate,"Float representing the speed that the ball was spinning as it left the bat, in rotations per minute"
+first_fielder,"On air outs, the unique identifier of the fielder making the outs"
+is_airout,Integer representing where the ball was caught for an airout (1) or not (0)
