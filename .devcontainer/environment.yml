@@ -17,9 +17,15 @@ dependencies:
   - mypy
   - pip
   - seaborn
+  - mysql-connector-python
+  - sqlalchemy
   - pip:
     - pretty_errors 
     - gdown
     - xgboost
     - CatBoost
     - lightgbm
+    - git+https://github.com/ghadfield32/ml_preprocessor
+    - shap
+    - scikit-optimize
+    - shapash
