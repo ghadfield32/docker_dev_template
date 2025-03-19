@@ -29,3 +29,4 @@ dependencies:
     - shap
     - scikit-optimize
     - shapash
+    - bayesian-optimization
