@@ -30,6 +30,3 @@ dependencies:
     - scikit-optimize
     - shapash
     - bayesian-optimization
-
-
-
