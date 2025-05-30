@@ -33,3 +33,4 @@ conda activate $ENV_NAME
 # Install the Python packages
 # pip3 install installs the packages listed in requirements.txt.
 pip3 install -r /requirements/requirements.txt
+

@@ -61,3 +61,6 @@ WORKDIR /workspace
 
 # Set the default command to bash
 CMD ["/bin/bash"]
+
+
+
