@@ -2,6 +2,26 @@
 
 This README provides a comprehensive guide to setting up a robust Docker environment for data science projects with GPU support. It includes detailed explanations and best practices to help you understand each component.
 
+## Recent Updates
+
+### PyJAGS Installation Fix
+
+The container now properly supports PyJAGS installation by including the necessary JAGS system libraries. This was fixed by:
+
+1. Adding the `jags` package to the Dockerfile, which includes both runtime and development files
+2. Using `pkg-config` to verify the JAGS installation
+3. Using the `CPPFLAGS="-include cstdint"` environment variable when installing PyJAGS to fix C++ header issues
+
+The container now successfully runs:
+- PyTorch with GPU support
+- JAX with GPU detection (with compatibility notes)
+- PyJAGS for Bayesian MCMC modeling
+
+You can verify the functionality by running:
+```bash
+docker compose run --rm datascience python /workspace/tests/test_pytorch_jax_gpu.py
+```
+
 ## Table of Contents
 - [GPU enabled Docker Image Template](#gpu-enabled-docker-image-template)
   - [Table of Contents](#table-of-contents)
@@ -283,7 +303,47 @@ This configuration sets up a development container with useful VS Code extension
 
 ## Troubleshooting
 
+### JAX GPU Compatibility Issues
 
+When using JAX with GPU support, you might encounter the following warning:
+
+```
+WARNING *** Invoking ptxas with version 12.3.107, which corresponds to a CUDA version <=12.6.2. 
+CUDA versions 12.x.y up to and including 12.6.2 miscompile certain edge cases around clamping.
+Please upgrade to CUDA 12.6.3 or newer.
+```
+
+This occurs because:
+1. The container uses CUDA 12.3.2, but JAX recommends CUDA 12.6.3 or newer
+2. JAX falls back to the CUDA driver for PTX compilation when it detects this issue
+
+**Solutions:**
+- The container will still work with this warning - JAX can detect and use the GPU
+- For production environments, consider using a newer CUDA version (12.6.3+)
+- If you encounter specific computation errors, you may need to fall back to CPU for those operations
+
+### Windows WSL Issues (VS Code Dev Containers)
+
+**If you see "Command 'Dev Containers: Rebuild and Reopen in Container' resulted in an error" on Windows:**
+
+This is usually a WSL path translation issue, not a Docker problem. Run our diagnostic:
+
+```powershell
+# PowerShell version (works even if WSL is broken)
+.\.devcontainer\debug_wsl_path.ps1
+
+# Or with Make (if available)
+make wsl-check
+```
+
+**Common fixes:**
+- Update WSL: `wsl --update`  
+- Check distro name: `wsl -l -v` and configure VS Code if needed
+- Install wslpath: `wsl -d Ubuntu -- sudo apt install -y wslu`
+
+📖 **Detailed guide**: See [`.devcontainer/WSL_TROUBLESHOOTING.md`](.devcontainer/WSL_TROUBLESHOOTING.md)
+
+### Other Issues
 
 1. **GPU not detected**:
    - Ensure NVIDIA drivers are installed and up to date
