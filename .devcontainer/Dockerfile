@@ -1,66 +1,86 @@
-# Use NVIDIA CUDA base image for GPU support
-FROM nvidia/cuda:12.0.0-base-ubuntu22.04
+# .devcontainer/Dockerfile — uv‑based replacement for the previous Conda image
+# -----------------------------------------------------------------------------
+# CUDA + cuDNN base with drivers already installed --------------------------------
+FROM nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04
 
-# Define ARGs
-ARG ENV_NAME=data_science_example
-ARG PYTHON_VER=3.10
+# ----------------------------------------------------------------------------
+# --- Build‑time ARGs ---------------------------------------------------------
+ARG PYTHON_VER=3.10               # system Python to seed the venv
+ARG ENV_NAME=docker_dev_template  # prompt shown when the venv is active
+# JAX GPU memory tuning (kept 1‑for‑1 with the old Conda image)
+ARG JAX_PREALLOCATE=true
+ARG JAX_MEM_FRAC=0.95
+ARG JAX_ALLOCATOR=platform
+ARG JAX_PREALLOC_LIMIT=8589934592
 
-# Prevent tzdata from asking for user input
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
 
-# Set environment variables
-ENV CONDA_DIR=/opt/conda
-ENV PATH=$CONDA_DIR/bin:$PATH
-ENV ENV_NAME=$ENV_NAME
+# ----------------------------------------------------------------------------
+# 1) Core OS deps, build tools, & Python (system) -----------------------------
+RUN --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
+        curl ca-certificates git procps htop util-linux build-essential \
+        python3 python3-venv python3-pip python3-dev \
+        autoconf automake libtool m4 cmake pkg-config \
+        jags \
+        && pkg-config --modversion jags \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install system dependencies
-RUN apt-get update --fix-missing && apt-get install -y \
-    wget \
-    bzip2 \
-    ca-certificates \
-    curl \
-    git \
-    vim \
-    python3-pip \
-    python3-dev \
-    python3-opencv \
-    libglib2.0-0 \
-    libstdc++6 \
-    libgcc1 \
-    libc6 \
-    libc6-dev \
-    libc-dev-bin \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# ----------------------------------------------------------------------------
+# 2) Copy a *pinned* uv & uvx binary pair from the official distroless image --
+COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /uvx /bin/
 
-# Install Miniconda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
-    && /bin/bash ~/miniconda.sh -b -p /opt/conda \
-    && rm ~/miniconda.sh \
-    && $CONDA_DIR/bin/conda clean -a -y
+# ----------------------------------------------------------------------------
+# 3) Create project dir & copy only the lock/manifest for best layer‑caching --
+WORKDIR /app
+COPY pyproject.toml uv.lock* ./
 
-# Create a new Conda environment
-COPY .devcontainer/environment.yml /tmp/environment.yml
-RUN sed -i "s/name: \${ENV_NAME}/name: $ENV_NAME/" /tmp/environment.yml && \
-    sed -i "s/- python=\${PYTHON_VER}/- python=$PYTHON_VER/" /tmp/environment.yml && \
-    conda env create -f /tmp/environment.yml \
-    && conda clean -a -y
+# ----------------------------------------------------------------------------
+# 4) Create an in‑project venv & sync dependencies (no project‑source yet) ----
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv .venv --python "${PYTHON_VER}" --prompt "${ENV_NAME}" && \
+    uv sync --locked
 
-# Set up shell initialization for Conda
-RUN echo ". /opt/conda/etc/profile.d/conda.sh && conda activate $ENV_NAME" >> /etc/bash.bashrc
+# Promote venv for all later layers ------------------------------------------------
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
 
-# Upgrade pip and install additional packages within the Conda environment
-RUN /bin/bash -c ". /opt/conda/etc/profile.d/conda.sh && conda activate $ENV_NAME && \
-    pip install --upgrade pip && \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118"
+# ----------------------------------------------------------------------------
+# 5) Install CUDA wheels (PyTorch nightly + JAX CUDA 12) ----------------------
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --pre --no-cache-dir \
+        torch torchvision torchaudio \
+        --index-url https://download.pytorch.org/whl/nightly/cu128 && \
+    uv pip install --no-cache-dir \
+        "jax[cuda12-local]==0.4.38" \
+        -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 
-# Set working directory
+# ----------------------------------------------------------------------------
+# 6) Install PyJAGS with the cstdint header work‑around -----------------------
+RUN CPPFLAGS="-include cstdint" uv pip install --no-build-isolation pyjags==1.3.8
+
+# ----------------------------------------------------------------------------
+# 7) Copy *rest* of the project after deps → fast rebuild when code changes ---
+COPY . /app
+
+# ----------------------------------------------------------------------------
+# 8) GPU‑tuning env vars (carried forward from Conda‑based image) -------------
+ENV XLA_PYTHON_CLIENT_PREALLOCATE=${JAX_PREALLOCATE}
+ENV XLA_PYTHON_CLIENT_MEM_FRACTION=${JAX_MEM_FRAC}
+ENV XLA_PYTHON_CLIENT_ALLOCATOR=${JAX_ALLOCATOR}
+ENV JAX_PLATFORM_NAME=gpu
+ENV XLA_FLAGS="--xla_force_host_platform_device_count=1"
+ENV JAX_DISABLE_JIT=false
+ENV JAX_ENABLE_X64=false
+ENV TF_FORCE_GPU_ALLOW_GROWTH=false
+ENV JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOC_LIMIT}
+
+# ----------------------------------------------------------------------------
+# 9) Library path so PyJAGS & CUDA libs resolve correctly ---------------------
+ENV LD_LIBRARY_PATH="/app/.venv/lib:${LD_LIBRARY_PATH}"
+
+# ----------------------------------------------------------------------------
+# 10) Final working directory & default command ------------------------------
 WORKDIR /workspace
-
-# Set the default command to bash
-CMD ["/bin/bash"]
-
-
-
+CMD ["bash"]

@@ -1,49 +1,34 @@
 {
-    "name": "data_science_example",
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": "..",
-        "args": {
-            "ENV_NAME": "data_science_example",
-            "PYTHON_VER": "${localEnv:PYTHON_VER:3.10}",
-            "QUARTO_VER": "${localEnv:QUARTO_VER:1.3.450}"
-        }
-    },
-    "customizations": {
-        "vscode": {
-            "settings": {
-                "python.defaultInterpreterPath": "/opt/conda/envs/data_science_example/bin/python",
-                "python.pythonPath": "/opt/conda/envs/data_science_example/bin/python",
-                "terminal.integrated.profiles.linux": {
-                    "bash": {
-                        "path": "bash",
-                        "args": ["-l"]
-                    }
-                },
-                "terminal.integrated.defaultProfile.linux": "bash"
-            },
-            "extensions": [
-                "quarto.quarto",
-                "purocean.drawio-preview",
-                "redhat.vscode-yaml",
-                "yzhang.markdown-all-in-one",
-                "ms-azuretools.vscode-docker",
-                "ms-vscode-remote.remote-containers",
-                "ms-python.python",
-                "ms-toolsai.jupyter",
-                "github.vscode-github-actions"
-            ]
-        }
-    },
-    "mounts": [
-        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
-    ],
-    "remoteEnv": {
-        "MY_VAR": "${localEnv:MY_VAR:test_var}"
-    },
-    "runArgs": [
-        "--gpus", "all",
-        "--env-file", ".devcontainer/devcontainer.env"
-    ],
-    "postCreateCommand": "conda run -n data_science_example python /workspace/tests/test1.py"
+  "name": "docker_dev_template_uv",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "datascience",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "runArgs": [
+    "--gpus", "all",
+    "--env-file", ".devcontainer/devcontainer.env"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.pythonPath": "/app/.venv/bin/python"
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "GitHub.copilot",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "remoteEnv": {
+      "MY_VAR": "${localEnv:MY_VAR:test_var}"
+  },
+  "postCreateCommand": [
+    "bash", "-c", 
+    "set -euo pipefail && echo '## uv diagnostics ##' && uv --version && echo '## python ##' && which python && python -V && python -c 'import encodings, sys; print(\"🟢 encodings OK\", sys.executable)' && python -c 'import jupyterlab; print(\"🟢 jupyterlab OK\")' && python -c 'import torch; print(\"🟢 torch\", torch.__version__, \"CUDA:\", torch.cuda.is_available())' && python -c 'import jax; print(\"🟢 jax\", jax.__version__, \"devices:\", jax.devices())' && echo '🎉 All imports successful!'"
+  ]
 }
+
+

@@ -3,9 +3,8 @@
 **/.idea
 **/__pycache__
 **/*.pyc
+
 **/*.pyo
 **/*.pyd
 **/*.swp
-**/venv
-**/env
-
+**/.venv

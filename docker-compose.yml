@@ -1,25 +1,86 @@
+# docker-compose.yml
 services:
   datascience:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
-    runtime: nvidia  # Ensure the NVIDIA runtime is used
+      args:
+        PYTHON_VER: ${PYTHON_VER:-3.10}
+        ENV_NAME: ${ENV_NAME:-docker_dev_template}
+        JAX_PREALLOCATE: ${XLA_PYTHON_CLIENT_PREALLOCATE:-true}
+        JAX_MEM_FRAC: ${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.95}
+        JAX_ALLOCATOR: ${XLA_PYTHON_CLIENT_ALLOCATOR:-platform}
+        JAX_PREALLOC_LIMIT: ${JAX_PREALLOCATION_SIZE_LIMIT_BYTES:-8589934592}
+
+    image: "docker_dev_template-datascience:latest"
+    # (Removed explicit container_name to avoid "already in use" conflicts.)
+
+    # Enhanced restart policy to handle port conflicts
+    restart: unless-stopped
+
+    gpus: all
+
+    env_file:
+      - dev.env
+      - .devcontainer/.env
+
+    environment:
+      - PYTHON_VER=${PYTHON_VER}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display
+      - JAX_PLATFORM_NAME=${JAX_PLATFORM_NAME}
+      - XLA_PYTHON_CLIENT_PREALLOCATE=${XLA_PYTHON_CLIENT_PREALLOCATE}
+      - XLA_PYTHON_CLIENT_ALLOCATOR=${XLA_PYTHON_CLIENT_ALLOCATOR}
+      - XLA_PYTHON_CLIENT_MEM_FRACTION=${XLA_PYTHON_CLIENT_MEM_FRACTION}
+      - XLA_FLAGS=${XLA_FLAGS}
+      - JAX_DISABLE_JIT=${JAX_DISABLE_JIT}
+      - JAX_ENABLE_X64=${JAX_ENABLE_X64}
+      - TF_FORCE_GPU_ALLOW_GROWTH=${TF_FORCE_GPU_ALLOW_GROWTH}
+      - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOCATION_SIZE_LIMIT_BYTES}
+
     volumes:
       - .:/workspace
-    ports:
-      - "8888:8888"  # For Jupyter Notebook
-      - "6006:6006"  # For TensorBoard
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    environment:
-      - ENV_NAME=data_science_example
-      - PYTHON_VER=3.10
-    command: ["conda", "run", "-n", "data_science_example", "jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888", "--no-browser", "--allow-root"]
 
+    ports:
+      # Enhanced port configuration with fallback options
+      - "${HOST_JUPYTER_PORT:-8890}:8888"
+      - "${HOST_TENSORBOARD_PORT:-}:6008"
+      - "${HOST_EXPLAINER_PORT:-}:8050"
+      - "${HOST_STREAMLIT_PORT:-}:8501"
+
+    # Add debugging and conflict prevention
+    command: >
+      bash -c "
+      echo '=== Docker Dev Template Container Starting ===' &&
+      echo 'Checking port availability...' &&
+      if netstat -tulpn 2>/dev/null | grep -q :8888; then
+        echo 'WARNING: Port 8888 is already in use inside container!'
+      fi &&
+      cd /workspace &&
+      echo 'Python version:' &&
+      python -c \"import jax; print('JAX version:', jax.__version__)\" &&
+      echo \"Jupyter will be available at: http://localhost:${HOST_JUPYTER_PORT:-8890}\" &&
+      echo \"TensorBoard mapped to \$(hostname -i):6008 (host port auto-assigned)\" &&
+      echo 'Container ready for dev work. Ports configured:' &&
+      echo '  - Jupyter: ${HOST_JUPYTER_PORT:-8890} -> 8888' &&
+      echo '  - TensorBoard: ${HOST_TENSORBOARD_PORT:-auto} -> 6008' &&
+      echo '  - Explainer: ${HOST_EXPLAINER_PORT:-auto} -> 8050' &&
+      echo '  - Streamlit: ${HOST_STREAMLIT_PORT:-auto} -> 8501' &&
+      echo 'To prevent port conflicts, modify HOST_*_PORT variables in dev.env' &&
+      tail -f /dev/null
+      "
+
+    healthcheck:
+      test: ["CMD", "python", "/app/.devcontainer/jags_verify.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Enhanced labels for better debugging
+    labels:
+      - "com.docker.compose.project=docker_dev_template"
+      - "com.docker.compose.service=datascience"
+      - "description=AI/ML Development Environment with GPU Support"
 
 
