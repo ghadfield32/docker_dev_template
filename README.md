@@ -4,6 +4,35 @@ This README provides a comprehensive guide to setting up a robust Docker environ
 
 ## Recent Updates
 
+### Port Customization with Invoke Commands
+
+The project now supports customizable port mappings through invoke commands, allowing you to run multiple instances with different port configurations:
+
+```bash
+# Basic usage with default ports
+invoke up --name myproject
+
+# Custom Jupyter port
+invoke up --name myproject --jupyter-port 8891
+
+# Multiple custom ports
+invoke up --name myproject --jupyter-port 8892 --tensorboard-port 6010 --streamlit-port 8502
+
+# View current port mappings
+invoke ports --name myproject
+```
+
+Available port options:
+- `--jupyter-port`: Jupyter Lab port (default: 8890)
+- `--tensorboard-port`: TensorBoard port (auto-assigned by default)
+- `--streamlit-port`: Streamlit port (auto-assigned by default)
+- `--explainer-port`: Explainer Dashboard port (auto-assigned by default)
+
+This feature is particularly useful when:
+- Running multiple project instances simultaneously
+- Avoiding port conflicts with other services
+- Setting up development environments for team collaboration
+
 ### PyJAGS Installation Fix
 
 The container now properly supports PyJAGS installation by including the necessary JAGS system libraries. This was fixed by:
@@ -389,8 +418,78 @@ Remember to adjust paths, versions, and configurations according to your specifi
 This setup ensures that you have a robust and reproducible data science environment with GPU support, ready to be cloned and utilized for various projects. Adjust paths, versions, and configurations according to your specific needs and system setup.
 
 # Usage:
-(data_science) terminal to use jupyter lab:
-conda run -n data_science jupyter lab --ip 0.0.0.0 --port 8888 --no-browser --allow-root
+
+## Invoke Commands
+
+The project provides a set of convenient invoke commands for managing your development environment:
+
+### Basic Commands
+
+```bash
+# Start a new container
+invoke up --name myproject
+
+# Stop the container
+invoke stop --name myproject
+
+# Open a shell in the container
+invoke shell --name myproject
+
+# View container port mappings
+invoke ports --name myproject
+
+# Clean up stopped containers
+invoke clean
+```
+
+### Port Configuration
+
+You can customize port mappings when starting a new container:
+
+1. **Default Setup**
+   ```bash
+   invoke up --name myproject
+   # Uses default ports: Jupyter (8890), others auto-assigned
+   ```
+
+2. **Custom Jupyter Port**
+   ```bash
+   invoke up --name myproject --jupyter-port 8891
+   # Changes only Jupyter port, others remain auto-assigned
+   ```
+
+3. **Multiple Custom Ports**
+   ```bash
+   invoke up --name myproject \
+     --jupyter-port 8892 \
+     --tensorboard-port 6010 \
+     --streamlit-port 8502
+   ```
+
+4. **Running Multiple Instances**
+   ```bash
+   # First instance
+   invoke up --name project1 --jupyter-port 8891
+   
+   # Second instance (different ports)
+   invoke up --name project2 --jupyter-port 8892
+   ```
+
+5. **Checking Port Assignments**
+   ```bash
+   invoke ports --name myproject
+   # Shows all port mappings for the container
+   ```
+
+### Tips for Port Configuration
+- Always use different port numbers for multiple instances
+- Note down custom port assignments for your projects
+- Use the `ports` command to verify current mappings
+- Default ports if not specified:
+  - Jupyter Lab: 8890
+  - TensorBoard: auto-assigned
+  - Streamlit: auto-assigned
+  - Explainer Dashboard: auto-assigned
 
 # A Dockerized Python Development Environment Template
 

@@ -48,6 +48,7 @@ dev = [
   "isort>=5.0.0",
   "flake8>=5.0.0",
   "mypy>=1.0.0",
+  "invoke>=2.2",
 ]
 
 cuda = [
@@ -60,6 +61,3 @@ device = "cuda"          # Use CUDA by default if available
 floatX = "float32"       # Use float32 by default for better CUDA performance
 allow_gc = true          # Allow garbage collection
 optimizer = "fast_run"   # Fast run optimization by default
-
-
-
