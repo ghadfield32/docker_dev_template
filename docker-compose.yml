@@ -1,4 +1,6 @@
 # docker-compose.yml
+name: ${ENV_NAME:-docker_dev_template}
+
 services:
   datascience:
     build:
@@ -12,7 +14,6 @@ services:
         JAX_ALLOCATOR: ${XLA_PYTHON_CLIENT_ALLOCATOR:-platform}
         JAX_PREALLOC_LIMIT: ${JAX_PREALLOCATION_SIZE_LIMIT_BYTES:-8589934592}
 
-    image: "docker_dev_template-datascience:latest"
     # (Removed explicit container_name to avoid "already in use" conflicts.)
 
     # Enhanced restart policy to handle port conflicts
@@ -79,8 +80,6 @@ services:
 
     # Enhanced labels for better debugging
     labels:
-      - "com.docker.compose.project=docker_dev_template"
+      - "com.docker.compose.project=${ENV_NAME:-docker_dev_template}"
       - "com.docker.compose.service=datascience"
       - "description=AI/ML Development Environment with GPU Support"
-
-

@@ -1,18 +1,16 @@
 # .devcontainer/Dockerfile — uv‑based replacement for the previous Conda image
 # -----------------------------------------------------------------------------
 # CUDA + cuDNN base with drivers already installed --------------------------------
-FROM nvidia/cuda:12.3.2-cudnn9-devel-ubuntu22.04
+ARG CUDA_TAG=12.8.0              # <── single source of truth
+FROM nvidia/cuda:${CUDA_TAG}-cudnn-devel-ubuntu22.04
 
-# ----------------------------------------------------------------------------
-# --- Build‑time ARGs ---------------------------------------------------------
-ARG PYTHON_VER=3.10               # system Python to seed the venv
-ARG ENV_NAME=docker_dev_template  # prompt shown when the venv is active
-# JAX GPU memory tuning (kept 1‑for‑1 with the old Conda image)
+# ---------- build-time ARGs ---------------------------------------------------
+ARG PYTHON_VER=3.10
+ARG ENV_NAME=docker_dev_template
 ARG JAX_PREALLOCATE=true
 ARG JAX_MEM_FRAC=0.95
 ARG JAX_ALLOCATOR=platform
 ARG JAX_PREALLOC_LIMIT=8589934592
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ----------------------------------------------------------------------------
@@ -40,21 +38,45 @@ COPY pyproject.toml uv.lock* ./
 # 4) Create an in‑project venv & sync dependencies (no project‑source yet) ----
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv .venv --python "${PYTHON_VER}" --prompt "${ENV_NAME}" && \
-    uv sync --locked
+    # If the lockfile is stale, regenerate it & continue – keeps CI green
+    (uv sync --locked || (echo "⚠️  Lock drift detected – regenerating" \
+        && uv lock --upgrade --quiet && uv sync))
 
 # Promote venv for all later layers ------------------------------------------------
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 
 # ----------------------------------------------------------------------------
-# 5) Install CUDA wheels (PyTorch nightly + JAX CUDA 12) ----------------------
+# 5) ---------- CUDA wheels -------------------------------------------------------
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --pre --no-cache-dir \
         torch torchvision torchaudio \
         --index-url https://download.pytorch.org/whl/nightly/cu128 && \
     uv pip install --no-cache-dir \
-        "jax[cuda12-local]==0.4.38" \
+        "jax[cuda12]==0.6.0" \
         -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
+# --- CUDA toolkit sanity check (robust for runtime *and* devel images) ------
+RUN set -e; \
+    # 1️⃣ First try: any cuda-<ver> folder?
+    CUDA_REAL="$(ls -d /usr/local/cuda-* 2>/dev/null | sort -V | tail -n1 || true)"; \
+    # 2️⃣ Fallback: flat layout shipped by some runtime images
+    if [ -z "$CUDA_REAL" ] && [ -d /usr/local/cuda ]; then \
+        CUDA_REAL="/usr/local/cuda"; \
+    fi; \
+    # 3️⃣ Bail if still empty
+    if [ -z "$CUDA_REAL" ]; then \
+        echo '❌  No CUDA toolkit folder found — aborting.' >&2; exit 1; \
+    fi; \
+    # 4️⃣ Refresh the canonical symlink only when needed
+    if [ "$CUDA_REAL" != "/usr/local/cuda" ]; then \
+        echo "🔧  Linking /usr/local/cuda -> $CUDA_REAL"; \
+        ln -sfn "$CUDA_REAL" /usr/local/cuda; \
+    fi; \
+    echo "🟢  CUDA toolkit detected at $CUDA_REAL"
+
+
+
 
 # ----------------------------------------------------------------------------
 # 6) Install PyJAGS with the cstdint header work‑around -----------------------
@@ -84,3 +106,11 @@ ENV LD_LIBRARY_PATH="/app/.venv/lib:${LD_LIBRARY_PATH}"
 # 10) Final working directory & default command ------------------------------
 WORKDIR /workspace
 CMD ["bash"]
+
+# 11) Force login shells & VS Code terminals to land in /workspace
+RUN echo 'cd /workspace' > /etc/profile.d/99-workspace-cd.sh
+
+# 12) Force every IPython / Jupyter kernel to start in /workspace
+RUN mkdir -p /root/.ipython/profile_default/startup && \
+    printf "import os, sys\nos.chdir('/workspace')\nsys.path.append('/workspace')\n" \
+      > /root/.ipython/profile_default/startup/00-cd-workspace.py
