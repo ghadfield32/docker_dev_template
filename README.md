@@ -33,6 +33,68 @@ This feature is particularly useful when:
 - Avoiding port conflicts with other services
 - Setting up development environments for team collaboration
 
+## Invoke Commands Reference
+
+This project uses `invoke` tasks to manage Docker containers and development workflows. Here's a comprehensive list of available commands:
+
+### Container Management
+
+```bash
+# Start a new container
+invoke up [--name PROJECT_NAME] [--jupyter-port PORT] [--tensorboard-port PORT] [--streamlit-port PORT] [--explainer-port PORT]
+# Example: invoke up --name myproject --jupyter-port 8891
+
+# Stop a container
+invoke stop [--name PROJECT_NAME]
+# Example: invoke stop --name myproject
+
+# View port mappings
+invoke ports [--name PROJECT_NAME]
+# Example: invoke ports --name myproject
+
+# Clean up resources
+invoke clean
+# Removes stopped containers and dangling images
+```
+
+### Development Workflow
+
+```bash
+# Run tests
+invoke test [--name PROJECT_NAME]
+# Example: invoke test --name myproject
+
+# Check GPU status
+invoke gpu-check [--name PROJECT_NAME]
+# Example: invoke gpu-check --name myproject
+
+# Verify JAGS installation
+invoke jags-check [--name PROJECT_NAME]
+# Example: invoke jags-check --name myproject
+```
+
+### Best Practices
+
+1. **Naming Containers**:
+   - Always use meaningful names for your containers with the `--name` flag
+   - This helps when running multiple instances
+   - Example: `invoke up --name experiment1`
+
+2. **Port Management**:
+   - Use custom ports when running multiple containers
+   - Keep track of port assignments using `invoke ports`
+   - Example: `invoke up --name exp1 --jupyter-port 8891 --tensorboard-port 6006`
+
+3. **Resource Cleanup**:
+   - Stop containers when not in use: `invoke stop --name myproject`
+   - Regularly run `invoke clean` to remove unused resources
+   - This helps maintain system performance and free up disk space
+
+4. **Verification**:
+   - Run `invoke gpu-check` to verify GPU accessibility
+   - Use `invoke jags-check` to confirm JAGS installation
+   - These checks help ensure your environment is properly configured
+
 ### PyJAGS Installation Fix
 
 The container now properly supports PyJAGS installation by including the necessary JAGS system libraries. This was fixed by:

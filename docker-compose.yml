@@ -22,8 +22,7 @@ services:
     gpus: all
 
     env_file:
-      - dev.env
-      - .devcontainer/.env
+      - .env.template     # acts as the "defaults" layer
 
     environment:
       - PYTHON_VER=${PYTHON_VER}
