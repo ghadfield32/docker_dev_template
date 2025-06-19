@@ -196,3 +196,69 @@ def ports(c, name: str | None = None) -> None:
         print("  invoke up --name myproject --jupyter-port 8891")
         print("  invoke up --name myproject --jupyter-port 8892 \\")
         print("    --tensorboard-port 6009")
+
+
+# --- utilities ---------------------------------------------------------------
+def _norm(path: str | pathlib.Path) -> str:
+    """Return a lower-case, forward-slash, no-trailing-slash version of *path*."""
+    p = str(path).replace("\\", "/").rstrip("/").lower()
+    return p
+
+def _docker_projects_from_this_repo() -> set[str]:
+    """
+    Discover every Compose *project name* whose working_dir label ends with
+    the current repo path.
+
+    Works across Windows ↔ WSL ↔ macOS because we do suffix-match on a
+    normalised path.
+    """
+    here_tail = _norm(pathlib.Path(__file__).parent.resolve())
+    cmd = (
+        "docker container ls -a "
+        "--format '{{.Label \"com.docker.compose.project\"}} "
+        "{{.Label \"com.docker.compose.project.working_dir\"}}' "
+        "--filter label=com.docker.compose.project"
+    )
+    projects: set[str] = set()
+    for line in os.popen(cmd).read().strip().splitlines():
+        try:
+            proj, wd = line.split(maxsplit=1)
+        except ValueError:
+            continue
+        if _norm(wd).endswith(here_tail):
+            projects.add(proj)
+    return projects
+
+# --- task --------------------------------------------------------------------
+@task(
+    help={
+        "name": "Project name (defaults to folder). Ignored with --all.",
+        "all":  "Remove *all* projects launched from this repo.",
+        "rmi":  "Image-removal policy: all | local | none (default: local).",
+    }
+)
+def down(c, name: str | None = None, all: bool = False, rmi: str = "local"):
+    """
+    Stop containers **and** fully delete every artefact so next `invoke up`
+    starts from a clean slate.
+
+    Examples
+    --------
+    invoke down                  # nuke current-folder project
+    invoke down --name ml_project --rmi all   # wipe everything for ml_project
+    invoke down --all            # tear down every project from this repo
+    """
+    if rmi not in {"all", "local", "none"}:
+        raise ValueError("--rmi must be all | local | none")
+
+    targets = _docker_projects_from_this_repo() if all else {name or BASE_ENV.name}
+    flags = "-v --remove-orphans"
+    if rmi != "none":
+        flags += f" --rmi {rmi}"
+
+    for proj in targets:
+        try:
+            c.run(f"docker compose -p {proj} down {flags}")
+            print(f"🗑️  Removed project '{proj}'")
+        except Exception:
+            print(f"⚠️  Nothing to remove for '{proj}'")

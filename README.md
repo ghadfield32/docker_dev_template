@@ -18,8 +18,17 @@ invoke up --name myproject --jupyter-port 8891
 # Multiple custom ports
 invoke up --name myproject --jupyter-port 8892 --tensorboard-port 6010 --streamlit-port 8502
 
+# forces a clean rebuild without wiping volumes
+invoke up --name ml_project --rebuild   
+
 # View current port mappings
 invoke ports --name myproject
+
+# Always specify the project:
+invoke down --name ml_project
+
+# Tear down every stack from this repo:
+invoke down --all
 ```
 
 Available port options:
