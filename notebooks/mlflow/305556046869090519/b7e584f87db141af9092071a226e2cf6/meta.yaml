@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/b7e584f87db141af9092071a226e2cf6/artifacts
+end_time: 1750368148113
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: b7e584f87db141af9092071a226e2cf6
+run_name: bemused-stork-489
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148049
+status: 3
+tags: []
+user_id: ghadf

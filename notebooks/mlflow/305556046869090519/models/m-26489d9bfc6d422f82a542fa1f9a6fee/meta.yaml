@@ -1,0 +1,10 @@
+artifact_location: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/models/m-26489d9bfc6d422f82a542fa1f9a6fee/artifacts
+creation_timestamp: 1750368149330
+experiment_id: '305556046869090519'
+last_updated_timestamp: 1750368151623
+model_id: m-26489d9bfc6d422f82a542fa1f9a6fee
+model_type: null
+name: random_forest_best_model
+source_run_id: 2570e306b48a40418b5baa8dbb1212a2
+status: 2
+status_message: null

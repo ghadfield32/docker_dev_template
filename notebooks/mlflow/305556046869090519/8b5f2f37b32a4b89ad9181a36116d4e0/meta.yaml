@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/8b5f2f37b32a4b89ad9181a36116d4e0/artifacts
+end_time: 1750368148816
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 8b5f2f37b32a4b89ad9181a36116d4e0
+run_name: delightful-doe-188
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148745
+status: 3
+tags: []
+user_id: ghadf

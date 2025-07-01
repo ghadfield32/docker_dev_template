@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/4ddb85b1df0c41068315d77e42f45f2c/artifacts
+end_time: 1750368149113
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 4ddb85b1df0c41068315d77e42f45f2c
+run_name: youthful-shrew-745
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368149066
+status: 3
+tags: []
+user_id: ghadf

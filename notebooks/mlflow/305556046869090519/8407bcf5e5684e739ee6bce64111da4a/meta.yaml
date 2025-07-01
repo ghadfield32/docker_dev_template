@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/8407bcf5e5684e739ee6bce64111da4a/artifacts
+end_time: 1750368147759
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 8407bcf5e5684e739ee6bce64111da4a
+run_name: logistic_regression_baseline
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368144606
+status: 3
+tags: []
+user_id: ghadf

@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/1f54448beded4af8989fdfc50bcfd4c8/artifacts
+end_time: 1750368148291
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 1f54448beded4af8989fdfc50bcfd4c8
+run_name: amusing-turtle-657
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148250
+status: 3
+tags: []
+user_id: ghadf

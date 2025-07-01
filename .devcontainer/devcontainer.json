@@ -1,34 +1,51 @@
 {
   "name": "docker_dev_template_uv",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": ["../docker-compose.yml"],
   "service": "datascience",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "runArgs": [
-    "--gpus", "all",
-    "--env-file", ".devcontainer/devcontainer.env"
-  ],
+  "runArgs": ["--gpus", "all"],
   "customizations": {
     "vscode": {
-      "settings": {
-        "python.defaultInterpreterPath": "/app/.venv/bin/python",
-        "python.pythonPath": "/app/.venv/bin/python"
-      },
       "extensions": [
         "ms-python.python",
+        "ms-python.vscode-pylance",
         "ms-toolsai.jupyter",
-        "GitHub.copilot",
-        "ms-azuretools.vscode-docker"
-      ]
+        "ms-toolsai.jupyter-renderers"
+      ],
+      "settings": {
+        // 1. COMPREHENSIVE TELEMETRY SETTINGS
+        "telemetry.telemetryLevel": "off",
+        "python.telemetry.enabled": false,
+        "jupyter.telemetry.enabled": false,
+        "jupyter.experiments.enabled": false,
+        "update.mode": "manual",
+        "extensions.autoUpdate": false,
+        "extensions.autoCheckUpdates": false,
+
+        // 2. MOVE HEAVY EXTENSIONS TO LOCAL UI HOST
+        "remote.extensionKind": {
+          "ms-python.python": ["ui"],
+          "ms-python.vscode-pylance": ["ui"],
+          "ms-toolsai.jupyter": ["ui"],
+          "ms-toolsai.jupyter-renderers": ["ui"]
+        },
+
+        // 3. PYTHON AND JUPYTER SETTINGS
+        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "jupyter.interactiveWindow.textEditor.executeSelection": true,
+        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"]
+      }
     }
   },
   "remoteEnv": {
-      "MY_VAR": "${localEnv:MY_VAR:test_var}"
+    "JUPYTER_ENABLE_LAB": "true"
   },
+
+  // After container creation, set up env, check UV, Python, and key libs
   "postCreateCommand": [
-    "bash", "-c", 
-    "set -euo pipefail && echo '## uv diagnostics ##' && uv --version && echo '## python ##' && which python && python -V && python -c 'import encodings, sys; print(\"🟢 encodings OK\", sys.executable)' && python -c 'import jupyterlab; print(\"🟢 jupyterlab OK\")' && python -c 'import torch; print(\"🟢 torch\", torch.__version__, \"CUDA:\", torch.cuda.is_available())' && python -c 'import jax; print(\"🟢 jax\", jax.__version__, \"devices:\", jax.devices())' && echo '🎉 All imports successful!'"
+    "/bin/sh",
+    "-c",
+    ".devcontainer/setup_env.sh && \\\necho '## uv diagnostics ##' && uv --version && \\\necho '## python ##' && which python && python -V && \\\nexec .devcontainer/verify_env.py"
   ]
 }
-
-

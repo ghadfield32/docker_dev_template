@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/c30118ab3fe145f4b42f67c6b41876e8/artifacts
+end_time: 1750368148393
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: c30118ab3fe145f4b42f67c6b41876e8
+run_name: magnificent-croc-314
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148357
+status: 3
+tags: []
+user_id: ghadf

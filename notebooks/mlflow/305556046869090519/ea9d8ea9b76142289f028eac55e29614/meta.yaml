@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/ea9d8ea9b76142289f028eac55e29614/artifacts
+end_time: 1750368148448
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: ea9d8ea9b76142289f028eac55e29614
+run_name: zealous-cow-763
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148408
+status: 3
+tags: []
+user_id: ghadf

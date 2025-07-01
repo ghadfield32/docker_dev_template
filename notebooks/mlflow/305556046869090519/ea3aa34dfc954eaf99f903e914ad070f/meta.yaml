@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/ea3aa34dfc954eaf99f903e914ad070f/artifacts
+end_time: 1750368148917
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: ea3aa34dfc954eaf99f903e914ad070f
+run_name: defiant-roo-250
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148829
+status: 3
+tags: []
+user_id: ghadf

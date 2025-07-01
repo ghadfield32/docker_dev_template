@@ -19,10 +19,11 @@ services:
     # Enhanced restart policy to handle port conflicts
     restart: unless-stopped
 
-    gpus: all
+    depends_on:
+      mlflow:
+        condition: service_healthy
 
-    env_file:
-      - .env.template     # acts as the "defaults" layer
+    gpus: all
 
     environment:
       - PYTHON_VER=${PYTHON_VER}
@@ -40,45 +41,59 @@ services:
 
     volumes:
       - .:/workspace
+      - ./mlruns:/workspace/mlruns        # new
 
     ports:
       # Enhanced port configuration with fallback options
       - "${HOST_JUPYTER_PORT:-8890}:8888"
       - "${HOST_TENSORBOARD_PORT:-}:6008"
-      - "${HOST_EXPLAINER_PORT:-}:8050"
+      - "${HOST_EXPLAINER_PORT:-8050}:8050"
       - "${HOST_STREAMLIT_PORT:-}:8501"
 
-    # Add debugging and conflict prevention
     command: >
-      bash -c "
-      echo '=== Docker Dev Template Container Starting ===' &&
-      echo 'Checking port availability...' &&
-      if netstat -tulpn 2>/dev/null | grep -q :8888; then
-        echo 'WARNING: Port 8888 is already in use inside container!'
-      fi &&
-      cd /workspace &&
-      echo 'Python version:' &&
-      python -c \"import jax; print('JAX version:', jax.__version__)\" &&
-      echo \"Jupyter will be available at: http://localhost:${HOST_JUPYTER_PORT:-8890}\" &&
-      echo \"TensorBoard mapped to \$(hostname -i):6008 (host port auto-assigned)\" &&
-      echo 'Container ready for dev work. Ports configured:' &&
-      echo '  - Jupyter: ${HOST_JUPYTER_PORT:-8890} -> 8888' &&
-      echo '  - TensorBoard: ${HOST_TENSORBOARD_PORT:-auto} -> 6008' &&
-      echo '  - Explainer: ${HOST_EXPLAINER_PORT:-auto} -> 8050' &&
-      echo '  - Streamlit: ${HOST_STREAMLIT_PORT:-auto} -> 8501' &&
-      echo 'To prevent port conflicts, modify HOST_*_PORT variables in dev.env' &&
-      tail -f /dev/null
-      "
+      jupyter lab
+        --ip=0.0.0.0
+        --port=8888
+        --allow-root
+        --NotebookApp.token="${JUPYTER_TOKEN:-jupyter}"
+        --NotebookApp.allow_origin='*'
 
     healthcheck:
-      test: ["CMD", "python", "/app/.devcontainer/jags_verify.py"]
+      test: ["CMD-SHELL", "bash --version && uv --help || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 60s
 
     # Enhanced labels for better debugging
     labels:
       - "com.docker.compose.project=${ENV_NAME:-docker_dev_template}"
       - "com.docker.compose.service=datascience"
       - "description=AI/ML Development Environment with GPU Support"
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlflow_artifacts
+    environment:
+      MLFLOW_EXPERIMENTS_DEFAULT_ARTIFACT_LOCATION: /mlflow_artifacts
+    volumes:
+      - ./mlruns:/mlflow_artifacts    # artifacts + run metadata
+      - ./mlflow_db:/mlflow_db        # SQLite backend store
+    ports:
+      - "${HOST_MLFLOW_PORT:-5000}:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL",
+             "python - <<'PY'\nimport requests,sys; requests.get('http://localhost:5000/health').raise_for_status()\nPY"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+
+
+

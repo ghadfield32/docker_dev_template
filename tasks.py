@@ -1,6 +1,6 @@
 # tasks.py  ── invoke ≥2.2
-from invoke import task, Context
-from typing import List, Optional
+from invoke import task, Context  # type: ignore
+from typing import List, Optional, Union
 
 import os
 import sys
@@ -8,6 +8,9 @@ import pathlib
 import tempfile
 import datetime as _dt
 import atexit
+import socket
+import contextlib
+import errno
 
 
 BASE_ENV = pathlib.Path(__file__).parent
@@ -17,19 +20,115 @@ BASE_ENV = pathlib.Path(__file__).parent
 _saved_env_files: List[str] = []
 
 
-def _write_envfile(name: str, ports: Optional[dict[str, int]] = None) -> pathlib.Path:
-    """Generate an .env file customised for this run & return its path."""
+def _parse_port(port: Union[str, int, None]) -> Optional[int]:
+    """
+    Parse and validate a port number.
+    
+    Args:
+        port: Port number as string or int, or None
+        
+    Returns:
+        Validated port number as int, or None if input was None
+        
+    Raises:
+        ValueError: If port is invalid or out of range
+    """
+    if port is None:
+        return None
+        
+    try:
+        port_int = int(port)
+        if not (0 < port_int < 65536):
+            raise ValueError(f"Port {port_int} out of valid range (1-65535)")
+        return port_int
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Invalid port value: {port}") from e
+
+
+def _first_free_port(start: int = 5200) -> int:
+    """Return the first TCP port >= *start* that is unused on localhost."""
+    print(f"DEBUG: Searching for free port starting at {start}")  # Debug
+    import socket
+    import contextlib
+    for port in range(start, 65535):
+        with contextlib.closing(socket.socket()) as s:
+            if s.connect_ex(("127.0.0.1", port)):
+                print(f"DEBUG: Found free port {port}")  # Debug
+                return port
+    raise RuntimeError("No free port found")
+
+
+def _free_port(start=5200) -> int:
+    """Find a free port by letting the OS assign one."""
+    print(f"DEBUG: Finding free port starting at {start}")  # Debug
+    import socket
+    import contextlib
+    with contextlib.closing(
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ) as s:
+        s.bind(('', 0))
+        port = s.getsockname()[1]
+        print(f"DEBUG: Found free port {port}")  # Debug
+        return port
+
+
+def _port_free(host: str, port: int, timeout: float = 0.1) -> bool:
+    """
+    Return True iff *host:port* is NOT in use.
+
+    Uses a non-blocking TCP connect – works on Linux, macOS, Windows,
+    inside or outside WSL – and does **not** rely on lsof / netstat.
+    """
+    print(f"DEBUG: Checking if port {port} is free on {host}")  # Debug
+    try:
+        with contextlib.closing(
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ) as s:
+            s.settimeout(timeout)
+            s.connect((host, port))
+            print(f"DEBUG: Port {port} is in use")  # Debug
+            return False      # connection succeeded ⇒ something listening
+    except (OSError, socket.timeout):
+        print(f"DEBUG: Port {port} is free")  # Debug
+        return True           # connection failed ⇒ port is free
+
+
+def _find_port(preferred: int, start: int = 5200) -> int:
+    """
+    Try to use preferred port, fall back to finding first available port.
+    
+    Args:
+        preferred: The preferred port number to try first
+        start: Where to start searching if preferred port is taken
+        
+    Returns:
+        An available port number
+    """
+    print(f"DEBUG: Trying preferred port {preferred}")  # Debug
+    if _port_free("127.0.0.1", preferred):
+        return preferred
+    return _first_free_port(start)
+
+
+def _write_envfile(name: str, 
+                   ports: Optional[dict[str, int]] = None) -> pathlib.Path:
+    """
+    Create a throw-away .env file for the current `invoke up` run.
+    
+    Docker-compose will use this to see the chosen host-ports. We include all
+    services we know about; anything unset falls back to .env.template defaults.
+    """
     env_lines = [f"ENV_NAME={name}"]
     mapping = {
         "jupyter": "HOST_JUPYTER_PORT",
         "tensorboard": "HOST_TENSORBOARD_PORT",
         "explainer": "HOST_EXPLAINER_PORT",
         "streamlit": "HOST_STREAMLIT_PORT",
+        "mlflow": "HOST_MLFLOW_PORT",      # NEW
     }
     for svc, var in mapping.items():
         if ports and svc in ports:
             env_lines.append(f"{var}={ports[svc]}")
-    # fall back to template defaults for everything else
     env_lines.append(f"# generated {_dt.datetime.now().isoformat()}")
     tmp = tempfile.NamedTemporaryFile(
         "w", 
@@ -65,14 +164,19 @@ def _compose(
     ports: Optional[dict[str, int]] = None,
 ) -> None:
     """
-    Wrapper around `docker compose` that
-
-    • Injects ENV_NAME and COMPOSE_PROJECT_NAME so both build-time (*args*)
-      and runtime (*docker-compose.yml* env) use one canonical name.
-    • Passes `-p <n>` so images / volumes share that namespace.
-    • Falls back gracefully when PTYs are unavailable (Windows CI).
-    • Allows custom port configuration via ports dict.
+    Wrapper around `docker compose` that also sanity-checks host ports.
     """
+    # ---------- NEW pre-flight check --------------------------------------
+    if ports:
+        for svc, port in ports.items():
+            if port is None:
+                continue
+            if not _port_free("127.0.0.1", int(port)):
+                print(f"❌  Host port {port} already bound – "
+                      f"{svc} cannot start. Choose another port (invoke up "
+                      f"--{svc}-port XXXXX) or free it first.")
+                sys.exit(1)
+
     env = {**os.environ, "ENV_NAME": name, "COMPOSE_PROJECT_NAME": name}
     
     # Add port overrides if provided
@@ -94,7 +198,7 @@ def _compose(
         _compose._warned = True  # type: ignore[attr-defined]
 
     if rebuild:
-        full_cmd = f"docker compose -p {name} {cmd} --build --pull"
+        full_cmd = f"docker compose -p {name} {cmd} --build"
     else:
         full_cmd = f"docker compose -p {name} {cmd}"
     c.run(full_cmd, env=env, pty=use_pty)
@@ -108,6 +212,7 @@ def _compose(
         "tensorboard_port": "TensorBoard port (default: auto-assigned)",
         "explainer_port": "Explainer Dashboard port (default: auto-assigned)", 
         "streamlit_port": "Streamlit port (default: auto-assigned)",
+        "mlflow_port": "MLflow UI port (default: 5000, auto-assigns if busy)",
     }
 )
 def up(
@@ -116,15 +221,27 @@ def up(
     rebuild: bool = False,
     detach: bool = True,
     use_pty: bool = False,
-    jupyter_port: Optional[int] = None,
-    tensorboard_port: Optional[int] = None,
-    explainer_port: Optional[int] = None,
-    streamlit_port: Optional[int] = None,
+    jupyter_port: Union[str, int, None] = None,
+    tensorboard_port: Union[str, int, None] = None,
+    explainer_port: Union[str, int, None] = None,
+    streamlit_port: Union[str, int, None] = None,
+    mlflow_port: Union[str, int, None] = None,
 ) -> None:
     """Build (optionally --rebuild) & start the container with custom ports."""
     name = name or BASE_ENV.name
-    
-    # Build ports dict from provided arguments
+
+    # ---------- Parse and validate all ports -----------------
+    try:
+        jupyter_port = _parse_port(jupyter_port)
+        tensorboard_port = _parse_port(tensorboard_port)
+        explainer_port = _parse_port(explainer_port)
+        streamlit_port = _parse_port(streamlit_port)
+        mlflow_port = _parse_port(mlflow_port)
+    except ValueError as e:
+        print(f"❌ Port validation failed: {e}")
+        sys.exit(1)
+
+    # ---------- build dynamic port map -----------------
     ports = {}
     if jupyter_port is not None:
         ports["jupyter"] = jupyter_port
@@ -134,19 +251,49 @@ def up(
         ports["explainer"] = explainer_port
     if streamlit_port is not None:
         ports["streamlit"] = streamlit_port
-    
+
+    # ---------- Explainer auto-assign (NEW) ------------
+    print("DEBUG: Starting explainer port assignment")  # Debug
+    try:
+        # Try to use the explainer's version first
+        from src.mlops.explainer import _first_free_port  # type: ignore
+        print("DEBUG: Successfully imported _first_free_port from explainer")  # Debug
+    except ModuleNotFoundError:
+        print("DEBUG: Failed to import _first_free_port, using local implementation")  # Debug
+        # We'll use our local _first_free_port implementation
+        pass
+
+    if explainer_port is None:
+        print("DEBUG: No explainer port specified, finding one")  # Debug
+        explainer_port = _find_port(8050, 5200)
+    elif not _port_free("127.0.0.1", explainer_port):
+        print(f"DEBUG: Specified explainer port {explainer_port} is in use")  # Debug
+        sys.exit(1)
+    ports["explainer"] = explainer_port
+    print(f"🔌 Explainer host-port → {explainer_port}")
+
+    # ----- MLflow auto-assign (default 5000) -----------
+    print("DEBUG: Starting MLflow port assignment")  # Debug
+    if mlflow_port is None:
+        print("DEBUG: No MLflow port specified, finding one")  # Debug
+        mlflow_port = _find_port(5000, 5200)
+    elif not _port_free("127.0.0.1", mlflow_port):
+        print(f"DEBUG: Specified MLflow port {mlflow_port} is in use")  # Debug
+        sys.exit(1)
+    ports["mlflow"] = mlflow_port
+    print(f"🔌 MLflow host-port → {mlflow_port}")
+
     # Generate environment file
     env_path = _write_envfile(name, ports)
-    env_file_flag = f"--env-file {env_path}"
     compose_cmd = "up -d" if detach else "up"
 
     _compose(
         c,
-        f"{env_file_flag} {compose_cmd}",
+        f"--env-file {env_path} {compose_cmd}",
         name,
         rebuild=rebuild,
         force_pty=use_pty,
-        ports=ports if ports else None,
+        ports=ports,
     )
 
 
@@ -262,3 +409,48 @@ def down(c, name: str | None = None, all: bool = False, rmi: str = "local"):
             print(f"🗑️  Removed project '{proj}'")
         except Exception:
             print(f"⚠️  Nothing to remove for '{proj}'")
+
+
+@task(
+    help={
+        "yaml": "Path to dashboard.yaml file",
+        "port": "Port to serve on (default: 8150)",
+        "host": "Host to bind to (default: 0.0.0.0)",
+    }
+)
+def dashboard(c, yaml: str, port: int = 8150, host: str = "0.0.0.0") -> None:
+    """
+    Serve a saved ExplainerDashboard from a YAML configuration file.
+    
+    This task allows you to re-serve dashboards that were previously saved
+    with build_and_log_dashboard(save_yaml=True).
+    
+    Examples:
+        invoke dashboard --yaml dashboard.yaml
+        invoke dashboard --yaml dashboard.yaml --port 8200
+    """
+    import sys
+    from pathlib import Path
+    from src.mlops.explainer import load_dashboard_yaml
+    
+    yaml_path = Path(yaml)
+    if not yaml_path.exists():
+        print(f"❌ Dashboard YAML file not found: {yaml_path}")
+        sys.exit(1)
+    
+    # Check if port is available
+    if not _port_free(host, port):
+        print(f"❌ Port {port} is already in use on {host}")
+        sys.exit(1)
+    
+    try:
+        print(f"🔄 Loading dashboard from {yaml_path}")
+        dashboard_obj = load_dashboard_yaml(yaml_path)
+        
+        print(f"🌐 Serving ExplainerDashboard on {host}:{port}")
+        dashboard_obj.run(port=port, host=host, use_waitress=True, open_browser=False)
+        
+    except Exception as e:
+        print(f"❌ Failed to load or serve dashboard: {e}")
+        sys.exit(1)
+

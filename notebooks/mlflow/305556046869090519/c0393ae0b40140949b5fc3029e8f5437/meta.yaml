@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/c0393ae0b40140949b5fc3029e8f5437/artifacts
+end_time: 1750368148530
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: c0393ae0b40140949b5fc3029e8f5437
+run_name: gregarious-moth-439
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148460
+status: 3
+tags: []
+user_id: ghadf

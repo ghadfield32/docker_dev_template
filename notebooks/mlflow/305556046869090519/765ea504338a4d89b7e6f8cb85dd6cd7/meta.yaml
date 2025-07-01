@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/765ea504338a4d89b7e6f8cb85dd6cd7/artifacts
+end_time: 1750368147964
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 765ea504338a4d89b7e6f8cb85dd6cd7
+run_name: overjoyed-lynx-76
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368147919
+status: 3
+tags: []
+user_id: ghadf
