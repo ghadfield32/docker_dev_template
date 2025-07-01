@@ -18,12 +18,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
-        curl ca-certificates git procps htop util-linux build-essential \
+        bash curl ca-certificates git procps htop util-linux build-essential \
         python3 python3-venv python3-pip python3-dev \
         autoconf automake libtool m4 cmake pkg-config \
-        jags \
+        jags iproute2 net-tools lsof \
         && pkg-config --modversion jags \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for VS Code remote extension host
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get update && apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------------------------
 # 2) Copy a *pinned* uv & uvx binary pair from the official distroless image --
@@ -35,12 +40,13 @@ WORKDIR /app
 COPY pyproject.toml uv.lock* ./
 
 # ----------------------------------------------------------------------------
-# 4) Create an in‑project venv & sync dependencies (no project‑source yet) ----
+# 4) Create an in-project venv, install deps, then symlink into /workspace
 RUN --mount=type=cache,target=/root/.cache/uv \
+    mkdir -p /workspace && \
     uv venv .venv --python "${PYTHON_VER}" --prompt "${ENV_NAME}" && \
-    # If the lockfile is stale, regenerate it & continue – keeps CI green
     (uv sync --locked || (echo "⚠️  Lock drift detected – regenerating" \
-        && uv lock --upgrade --quiet && uv sync))
+        && uv lock --upgrade --quiet && uv sync)) && \
+    ln -s /app/.venv /workspace/.venv
 
 # Promote venv for all later layers ------------------------------------------------
 ENV VIRTUAL_ENV=/app/.venv
@@ -74,9 +80,6 @@ RUN set -e; \
         ln -sfn "$CUDA_REAL" /usr/local/cuda; \
     fi; \
     echo "🟢  CUDA toolkit detected at $CUDA_REAL"
-
-
-
 
 # ----------------------------------------------------------------------------
 # 6) Install PyJAGS with the cstdint header work‑around -----------------------
@@ -114,3 +117,9 @@ RUN echo 'cd /workspace' > /etc/profile.d/99-workspace-cd.sh
 RUN mkdir -p /root/.ipython/profile_default/startup && \
     printf "import os, sys\nos.chdir('/workspace')\nsys.path.append('/workspace')\n" \
       > /root/.ipython/profile_default/startup/00-cd-workspace.py
+
+# 13) Auto-activate uv venv in every login shell
+RUN echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
+
+
+

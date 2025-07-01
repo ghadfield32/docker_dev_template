@@ -4,7 +4,7 @@ repos:
     rev: 0.5.7  # Use the ref you want to point at
     hooks:
       - id: uv-lock      # keep uv.lock in sync
-      - id: uv-export    # optional: emit requirements.txt for workshops
+      - id: uv-export    
         args: [--extra=dev, --output-file=requirements-dev.txt]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

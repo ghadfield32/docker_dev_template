@@ -46,6 +46,11 @@ This feature is particularly useful when:
 
 This project uses `invoke` tasks to manage Docker containers and development workflows. Here's a comprehensive list of available commands:
 
+
+ports:
+http://localhost:5000/
+
+
 ### Container Management
 
 ```bash
@@ -65,6 +70,20 @@ invoke ports [--name PROJECT_NAME]
 invoke clean
 # Removes stopped containers and dangling images
 ```
+
+### Package Management Inside Container
+
+When working inside the container and you need to install or update packages:
+
+```bash
+# Sync packages inside the container (IMPORTANT: use --active flag)
+uv sync --active
+
+# Install a new package inside the container
+uv pip install --active package_name
+```
+
+The `--active` flag is required when running `uv sync` inside the container because it tells uv to use the active virtual environment at `/app/.venv` instead of looking for a `.venv` directory in the current workspace.
 
 ### Development Workflow
 

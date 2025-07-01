@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/1c3d01ceb12948c28b37107a653b2689/artifacts
+end_time: 1750368147912
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 1c3d01ceb12948c28b37107a653b2689
+run_name: sedate-donkey-246
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368147848
+status: 3
+tags: []
+user_id: ghadf

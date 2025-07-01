@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/43c8192278ae4846aeff1fcc6c869011/artifacts
+end_time: 1750368148981
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 43c8192278ae4846aeff1fcc6c869011
+run_name: useful-gnu-241
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148930
+status: 3
+tags: []
+user_id: ghadf

@@ -14,4 +14,8 @@ data/
 notebooks/**/*.ipynb_checkpoints
 *.log
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# --- NEW: keep build context tiny & readable ---
+mlruns/          # MLflow runs & artifacts (often huge, root-owned)
+mlruns/**        # ensure nested paths are ignored

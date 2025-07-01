@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/ded6b7cd8a8e4685941cee440781cb4e/artifacts
+end_time: 1750368148350
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: ded6b7cd8a8e4685941cee440781cb4e
+run_name: awesome-bass-924
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148298
+status: 3
+tags: []
+user_id: ghadf

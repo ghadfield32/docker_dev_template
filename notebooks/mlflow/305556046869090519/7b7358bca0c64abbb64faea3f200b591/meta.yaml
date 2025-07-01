@@ -1,0 +1,14 @@
+artifact_uri: file:///c:/docker_projects/docker_dev_template/notebooks/mlflow/305556046869090519/7b7358bca0c64abbb64faea3f200b591/artifacts
+end_time: 1750368148676
+entry_point_name: ''
+experiment_id: '305556046869090519'
+lifecycle_stage: active
+run_id: 7b7358bca0c64abbb64faea3f200b591
+run_name: fortunate-hound-704
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1750368148622
+status: 3
+tags: []
+user_id: ghadf
