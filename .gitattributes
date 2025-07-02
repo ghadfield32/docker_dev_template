@@ -1,11 +1,30 @@
-*.sh        text eol=lf
-Dockerfile   text eol=lf
-*.py         text eol=lf
-*.env        text eol=lf
-*.yml        text eol=lf
-*.yaml       text eol=lf
-*.json       text eol=lf
-*.md         text eol=lf
-*.txt        text eol=lf
-*.lock       text eol=lf
-*.toml       text eol=lf 
+# Always convert to LF so she-bangs work in Linux
+*.sh   text eol=lf
+*.bash text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.env  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.lock text eol=lf
+*.toml text eol=lf
+*.cfg  text eol=lf
+*.ini  text eol=lf
+
+# Force LF for all files in .devcontainer
+.devcontainer/** text eol=lf
+
+# Docker files always use LF
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+.dockerignore text eol=lf
+
+# Scripts always use LF
+scripts/** text eol=lf
+
+# Documentation
+*.md text diff=markdown
+*.txt text
+LICENSE text
