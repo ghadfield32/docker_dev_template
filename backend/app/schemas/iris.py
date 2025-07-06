@@ -28,10 +28,15 @@ class IrisFeatures(BaseModel):
 class IrisPredictRequest(BaseModel):
     """Iris prediction request schema."""
     model_type: str = Field("rf", description="Model type: 'rf' or 'logreg'")
-    samples: List[IrisFeatures] = Field(..., description="List of iris measurements")
+    samples: List[IrisFeatures] = Field(
+        ...,
+        alias="rows",  # Allow 'rows' as an alias for backward compatibility
+        description="List of iris measurements"
+    )
 
     class Config:
         """Pydantic config."""
+        populate_by_name = True  # Enable alias support
         json_schema_extra = {
             "example": {
                 "model_type": "rf",
@@ -41,12 +46,6 @@ class IrisPredictRequest(BaseModel):
                         "sepal_width": 3.5,
                         "petal_length": 1.4,
                         "petal_width": 0.2
-                    },
-                    {
-                        "sepal_length": 6.2,
-                        "sepal_width": 3.4,
-                        "petal_length": 5.4,
-                        "petal_width": 2.3
                     }
                 ]
             }

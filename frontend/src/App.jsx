@@ -108,7 +108,8 @@ const MLModelFrontend = () => {
         console.log('🔍 checkHealth DEBUG: Starting health check')
         const response = await callApi('/health');
         console.log('🔍 checkHealth DEBUG: Health check successful:', response)
-        setApiHealth(response.status);
+        // Accept both healthy and degraded as OK states
+        setApiHealth(response.status === 'degraded' ? 'healthy' : response.status);
       } catch (error) {
         console.error('❌ checkHealth DEBUG: Health check failed:', error)
         setApiHealth('error');
@@ -195,15 +196,16 @@ const MLModelFrontend = () => {
       let result
       if (selectedDataset === 'iris') {
         const payload = {
-          rows: [
+          model_type: 'rf',
+          samples: [
             {
               sepal_length: parseFloat(inputData.sepal_length) || 0,
               sepal_width: parseFloat(inputData.sepal_width) || 0,
               petal_length: parseFloat(inputData.petal_length) || 0,
-              petal_width: parseFloat(inputData.petal_width) || 0,
-            },
-          ],
-        }
+              petal_width: parseFloat(inputData.petal_width) || 0
+            }
+          ]
+        };
         console.log('🔍 handlePredict DEBUG: Calling iris prediction with payload:', payload)
         result = await callApi('/iris/predict', payload)
         console.log('🔍 handlePredict DEBUG: Iris prediction result:', result)
@@ -745,4 +747,6 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
+
+
 

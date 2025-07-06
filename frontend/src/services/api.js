@@ -61,7 +61,12 @@ export const apiService = {
 
   // Iris endpoints
   async predictIris(data) {
-    const response = await api.post('/iris/predict', data);
+    // Convert rows to samples if needed for backward compatibility
+    const payload = {
+      model_type: data.model_type || 'rf',
+      samples: data.rows || data.samples
+    };
+    const response = await api.post('/iris/predict', payload);
     return response.data;
   },
 
@@ -129,3 +134,4 @@ export const apiService = {
 };
 
 export default apiService;
+
