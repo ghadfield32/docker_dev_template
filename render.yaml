@@ -6,10 +6,18 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+<<<<<<< HEAD
     healthCheckPath: /health
+=======
+    healthCheckPath: /api/v1/health
+>>>>>>> 182d896a7a883fac52b2aaabf33717258868b7af
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.2
       - key: MLFLOW_TRACKING_URI
+<<<<<<< HEAD
         value: file:./mlruns_local
+=======
+        value: file:./mlruns_local 
+>>>>>>> 182d896a7a883fac52b2aaabf33717258868b7af

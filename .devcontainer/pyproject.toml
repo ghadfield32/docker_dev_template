@@ -70,4 +70,4 @@ cuda = [
 device = "cuda"          # Use CUDA by default if available
 floatX = "float32"       # Use float32 by default for better CUDA performance
 allow_gc = true          # Allow garbage collection
-optimizer = "fast_run"   # Fast run optimization by default
+optimizer = "fast_run"   # Fast run optimization by default 
