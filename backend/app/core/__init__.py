@@ -1,1 +1,1 @@
-"""Core package for application configuration and utilities.""" 
+"""Core package for application configuration.""" 

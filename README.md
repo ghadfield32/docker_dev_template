@@ -5,7 +5,7 @@ A complete machine learning application with FastAPI backend, React frontend, an
 ## 🚀 Quick Start
 
 frontend: zesty-starship-5035af.netlify.app
-backend: ml-backend.onrender.com
+backend: https://docker-dev-template.onrender.com
 
 
 ### Prerequisites

@@ -26,11 +26,14 @@ const MLModelFrontend = () => {
   // --- Real API helper  ---------------------------------------------------
   const callApi = async (path, payload = null, opts = {}) => {
     /*
-      Direct frontend→FastAPI communication using the `/api/v1` prefix.
-      Vite dev server proxies `/api/v1` calls directly to FastAPI.
-      This eliminates the Express proxy layer.
+      Direct frontend→FastAPI communication using environment variable.
+      In development: uses Vite proxy to localhost:8000
+      In production: uses VITE_API_URL environment variable
     */
-    const url = path.startsWith('/api/v1') ? path : `/api/v1${path}`
+    const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+    const url = path.startsWith('/api/v1') ? 
+      `${API_BASE.replace('/api/v1', '')}${path}` : 
+      `${API_BASE}${path}`
 
     // 🔍 DEBUG: Log the exact URL being called
     console.log('🔍 callApi DEBUG:', {
@@ -742,3 +745,4 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
+

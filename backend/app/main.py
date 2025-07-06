@@ -76,6 +76,12 @@ def create_application() -> FastAPI:
         """Health check endpoint."""
         return await model_service.get_health_status()
 
+    @app.head("/health", include_in_schema=False)
+    async def health_head():
+        """Health check HEAD endpoint for Render probes."""
+        from fastapi.responses import Response
+        return Response(status_code=200)
+
     return app
 
 

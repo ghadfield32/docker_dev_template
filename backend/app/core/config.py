@@ -18,7 +18,8 @@ class Settings:
         "http://localhost:5173",  # Vite dev server
         "http://localhost:8080",  # Alternative frontend
         "http://localhost:5000",  # Another common port
-        "*",  # Allow all origins in development
+        "https://*.netlify.app",  # Netlify deployments
+        "*",  # Allow all origins for development/testing
     ]
 
     # MLflow settings
