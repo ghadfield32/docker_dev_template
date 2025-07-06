@@ -1,15 +1,39 @@
 services:
   - type: web
-    name: ml_backend
+    name: ml-backend
     runtime: python
+    region: oregon
     plan: free
-    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/v1/health
-    autoDeploy: true
+    rootDir: backend
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.2
+      - key: DEV_AUTOTRAIN
+        value: "1"
       - key: MLFLOW_TRACKING_URI
-        value: file:./mlruns_local
+        value: "./mlruns"
+      - key: PROJECT_NAME
+        value: "ML Full Stack API"
+      - key: API_V1_STR
+        value: "/api/v1"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+    healthCheckPath: /health
+    autoDeploy: true
+    
+  # Optional: Add a static site for frontend if deploying both together
+  # - type: static
+  #   name: ml-frontend
+  #   buildCommand: cd frontend && npm ci && npm run build
+  #   publishPath: frontend/dist
+  #   envVars:
+  #     - key: VITE_API_URL
+  #       fromService:
+  #         type: web
+  #         name: ml-backend
+  #         property: host
+  #   routes:
+  #     - type: rewrite
+  #       source: /*
+  #       destination: /index.html
+

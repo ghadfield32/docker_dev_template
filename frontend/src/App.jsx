@@ -190,6 +190,7 @@ const MLModelFrontend = () => {
 
   // Make prediction
   const handlePredict = async () => {
+    let result; // ⚠️ Declare variable to avoid strict-mode error
     try {
       console.log('🔍 handlePredict DEBUG: Starting prediction for dataset:', selectedDataset)
       
@@ -780,6 +781,3 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
-
-
-
