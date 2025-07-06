@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const FASTAPI_URL = env.VITE_FASTAPI_URL || 'http://localhost:8000'   // FastAPI dev server
+  const FASTAPI_URL = env.VITE_API_URL || 'http://localhost:8000'   // Use env var or default to localhost
 
   return {
     plugins: [react()],

@@ -13,4 +13,4 @@ COPY src/backend/ ./
 
 # 4. Expose port & define default
 EXPOSE 5000
-CMD ["node", "server.js"] 
+CMD ["node", "server.js"]

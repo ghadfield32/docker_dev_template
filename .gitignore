@@ -2,7 +2,7 @@
 dev.env
 .devcontainer/.env.runtime
 
-<<<<<<< HEAD
+
 mlruns/
 mlflow_db/
 mlruns_local/
@@ -15,7 +15,8 @@ uv.lock
 
 test_iris.json
 
-=======
->>>>>>> 8c5b388ee37a7a055810bccaa0e0c5e050546aee
+frontend/node_modules/
+.env.template
+
 # Railway CLI (never commit tokens)
 .railway/config.json

@@ -194,7 +194,7 @@ def _compose(
                 sys.exit(1)
 
     env = {**os.environ, "ENV_NAME": name, "COMPOSE_PROJECT_NAME": name}
-    
+
     # Add debug logging for environment variables
     print("\n🔍 Debug: Environment Variables:")
     print(f"ENV_NAME: {env.get('ENV_NAME', 'Not set')}")
@@ -208,7 +208,7 @@ def _compose(
         runtime_env = _load_env_file(env_file)
         env.update(runtime_env)
         print(f"🔧  Loaded runtime environment from {env_file}")
-        
+
         # Debug: Print loaded runtime environment
         print("\n🔍 Debug: Loaded Runtime Environment:")
         for key, value in runtime_env.items():
@@ -559,4 +559,3 @@ def railway(c, cmd="--help", name=None):
         sys.exit(1)
 
     c.run(f"docker exec {container_id} railway {cmd}", pty=False)
-
