@@ -1,0 +1,29 @@
+{
+  "name": "ml-fullstack-app",
+  "private": true,
+  "scripts": {
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd backend && pytest tests/ && cd ../frontend && npm test",
+    "lint": "cd backend && ruff check . && cd ../frontend && npm run lint",
+    "format": "cd backend && ruff format . && cd ../frontend && npm run format",
+    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "start:containers": "invoke up --name ml-fullstack --detach",
+    "stop:containers": "invoke down --name ml-fullstack",
+    "logs": "docker-compose logs -f",
+    "health": "curl -s http://localhost:8000/api/v1/models/health | jq .",
+    "test:api": "curl -s http://localhost:8000/api/v1/iris/predict -H \"Content-Type: application/json\" -d '{\"model_type\":\"rf\",\"samples\":[{\"sepal_length\":5.1,\"sepal_width\":3.5,\"petal_length\":1.4,\"petal_width\":0.2}]}' | jq ."
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "npm-run-all": "^4.1.5",
+    "wait-on": "^7.0.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.0.1"
+  }
+}
+

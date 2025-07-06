@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_yaml_roundtrip(tmp_path):
     """Test that a dashboard can be saved to YAML and reloaded."""
-    from src.mlops.explainer import build_and_log_dashboard, load_dashboard_yaml
+    from src.backend.ML.mlops.explainer import build_and_log_dashboard, load_dashboard_yaml
     from sklearn.datasets import load_iris
     from sklearn.linear_model import LogisticRegression
     import mlflow
@@ -32,7 +32,7 @@ def test_yaml_roundtrip(tmp_path):
 
 def test_build_dashboard(tmp_path):
     """Test that a dashboard can be built and saved."""
-    from src.mlops.explainer import build_and_log_dashboard
+    from src.backend.ML.mlops.explainer import build_and_log_dashboard
     from sklearn.datasets import load_iris
     from sklearn.linear_model import LogisticRegression
     import mlflow
@@ -49,4 +49,4 @@ def test_build_dashboard(tmp_path):
             save_yaml=False,
             output_dir=tmp_path
         )
-        assert html.exists() and html.suffix == ".html" 
+        assert html.exists() and html.suffix == ".html"
