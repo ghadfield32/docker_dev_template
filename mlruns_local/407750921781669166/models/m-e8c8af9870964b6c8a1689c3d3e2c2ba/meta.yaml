@@ -1,0 +1,10 @@
+artifact_location: /workspace/mlruns/models/m-e8c8af9870964b6c8a1689c3d3e2c2ba/artifacts
+creation_timestamp: 1751755128479
+experiment_id: '407750921781669166'
+last_updated_timestamp: 1751755133346
+model_id: m-e8c8af9870964b6c8a1689c3d3e2c2ba
+model_type: null
+name: iris_random_forest
+source_run_id: d6f27e8a71de45269f752e151d25214c
+status: 2
+status_message: null

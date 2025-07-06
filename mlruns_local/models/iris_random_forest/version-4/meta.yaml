@@ -1,0 +1,190 @@
+aliases: []
+creation_timestamp: 1751755134096
+current_stage: Production
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1751755146151
+metrics:
+- key: accuracy
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: best_accuracy
+  step: 0
+  timestamp: 1751755128159
+  value: 1.0
+- key: f1_0
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: f1_1
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: f1_2
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: f1_macro
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: log_loss
+  step: 0
+  timestamp: 1751755127479
+  value: 2.2204460492503136e-16
+- key: mcc
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: precision_0
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: precision_1
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: precision_2
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: precision_macro
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: recall_0
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: recall_1
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: recall_2
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: recall_macro
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: roc_auc_ovr_weighted
+  step: 0
+  timestamp: 1751755127479
+  value: 1.0
+- key: shapiq_max_order
+  step: 0
+  timestamp: 1751755137684
+  value: 2.0
+- key: shapiq_order0_
+  step: 0
+  timestamp: 1751755138408
+  value: 0.30120323351611067
+- key: shapiq_order0_count
+  step: 0
+  timestamp: 1751755141583
+  value: 30.0
+- key: shapiq_order0_mean_abs
+  step: 0
+  timestamp: 1751755141919
+  value: 0.3012032335161107
+- key: shapiq_order1_count
+  step: 0
+  timestamp: 1751755142241
+  value: 120.0
+- key: shapiq_order1_mean_abs
+  step: 0
+  timestamp: 1751755142518
+  value: 0.023020954705982297
+- key: shapiq_order1_petal_length_cm
+  step: 0
+  timestamp: 1751755138741
+  value: 0.14584388166363674
+- key: shapiq_order1_petal_width_cm
+  step: 0
+  timestamp: 1751755139071
+  value: 0.13517069905717227
+- key: shapiq_order1_sepal_length_cm
+  step: 0
+  timestamp: 1751755140000
+  value: 0.030653070028890454
+- key: shapiq_order1_sepal_width_cm
+  step: 0
+  timestamp: 1751755140679
+  value: 0.008467816178245274
+- key: shapiq_order1_std
+  step: 0
+  timestamp: 1751755142886
+  value: 0.11826153399974094
+- key: shapiq_order2_count
+  step: 0
+  timestamp: 1751755143268
+  value: 180.0
+- key: shapiq_order2_mean_abs
+  step: 0
+  timestamp: 1751755143573
+  value: 0.015347303060577721
+- key: shapiq_order2_petal_length_cm_x_petal_width_cm
+  step: 0
+  timestamp: 1751755139384
+  value: 0.06272946970894513
+- key: shapiq_order2_sepal_length_cm_x_petal_length_cm
+  step: 0
+  timestamp: 1751755139688
+  value: 0.035163724835911264
+- key: shapiq_order2_sepal_length_cm_x_petal_width_cm
+  step: 0
+  timestamp: 1751755140364
+  value: 0.026470534769180695
+- key: shapiq_order2_sepal_length_cm_x_sepal_width_cm
+  step: 0
+  timestamp: 1751755140960
+  value: 0.005372318053696439
+- key: shapiq_order2_sepal_width_cm_x_petal_length_cm
+  step: 0
+  timestamp: 1751755141237
+  value: 0.004878246544644629
+- key: shapiq_order2_std
+  step: 0
+  timestamp: 1751755143877
+  value: 0.03327536672947789
+- key: shapiq_samples_analyzed
+  step: 0
+  timestamp: 1751755138079
+  value: 30.0
+- key: shapiq_total_interactions
+  step: 0
+  timestamp: 1751755137051
+  value: 330.0
+- key: shapiq_unique_combinations
+  step: 0
+  timestamp: 1751755137342
+  value: 11.0
+- key: support_0
+  step: 0
+  timestamp: 1751755127479
+  value: 10.0
+- key: support_1
+  step: 0
+  timestamp: 1751755127479
+  value: 9.0
+- key: support_2
+  step: 0
+  timestamp: 1751755127479
+  value: 11.0
+model_id: m-e8c8af9870964b6c8a1689c3d3e2c2ba
+name: iris_random_forest
+params:
+  n_classes: '3'
+  n_features: '4'
+  test_size: '30'
+  train_size: '120'
+run_id: d6f27e8a71de45269f752e151d25214c
+run_link: null
+source: models:/m-e8c8af9870964b6c8a1689c3d3e2c2ba
+status: READY
+status_message: null
+storage_location: /workspace/mlruns/models/m-e8c8af9870964b6c8a1689c3d3e2c2ba/artifacts
+user_id: null
+version: 4
