@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Create axios instance with base configuration
 const api = axios.create({
-  baseURL: '/api/v1', // Use proxy
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -62,7 +61,12 @@ export const apiService = {
 
   // Iris endpoints
   async predictIris(data) {
-    const response = await api.post('/iris/predict', data);
+    // Convert rows to samples if needed for backward compatibility
+    const payload = {
+      model_type: data.model_type || 'rf',
+      samples: data.rows || data.samples
+    };
+    const response = await api.post('/iris/predict', payload);
     return response.data;
   },
 
@@ -130,3 +134,4 @@ export const apiService = {
 };
 
 export default apiService;
+
