@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api_v1.api import api_router
 from app.services.ml.model_service import model_service
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,6 +20,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - startup and shutdown."""
+    logger.info(f"🌀 PORT env inside container: {os.getenv('PORT')}")
+    logger.info("🔧 Initializing ML model service...")
     logger.info("🌀 [lifespan] Entering lifespan—about to init services")
 
     try:

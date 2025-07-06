@@ -22,18 +22,28 @@ from ...core.config import settings
 from ...schemas.common import HealthResponse, ModelInfo
 
 # Import existing ML utilities
-# 🔧 Note: These backend.ML imports are for optional ML training modules
-#     that may not be present in all deployments. They're kept as-is since
-#     they're already wrapped in try-except and are optional.
+# 🔧 Try both import paths to support local and Render environments
+setup_mlflow_experiment = None
+run_all_trainings = None
+train_bayes_logreg = None
+
 try:
-    from backend.ML.mlops.experiment_utils import setup_mlflow_experiment
-    from backend.ML.mlops.training import run_all_trainings
-    from backend.ML.mlops.training_bayes import train_bayes_logreg
+    # First try app-relative imports (for Render)
+    from app.ML.mlops.experiment_utils import setup_mlflow_experiment
+    from app.ML.mlops.training import run_all_trainings
+    from app.ML.mlops.training_bayes import train_bayes_logreg
+    logging.info("✅ Loaded ML modules using app-relative imports")
 except ImportError as e:
-    logging.warning(f"Could not import existing ML modules: {e}")
-    setup_mlflow_experiment = None
-    run_all_trainings = None
-    train_bayes_logreg = None
+    logging.debug(f"app-relative imports failed: {e}")
+    try:
+        # Then try backend-relative imports (for local dev)
+        from backend.ML.mlops.experiment_utils import setup_mlflow_experiment
+        from backend.ML.mlops.training import run_all_trainings
+        from backend.ML.mlops.training_bayes import train_bayes_logreg
+        logging.info("✅ Loaded ML modules using backend-relative imports")
+    except ImportError as e:
+        logging.warning(f"Could not import ML modules from either path: {e}")
+        # Keep the fallback None values
 
 logger = logging.getLogger(__name__)
 
