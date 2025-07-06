@@ -23,19 +23,19 @@ _saved_env_files: List[str] = []
 def _parse_port(port: Union[str, int, None]) -> Optional[int]:
     """
     Parse and validate a port number.
-    
+
     Args:
         port: Port number as string or int, or None
-        
+
     Returns:
         Validated port number as int, or None if input was None
-        
+
     Raises:
         ValueError: If port is invalid or out of range
     """
     if port is None:
         return None
-        
+
     try:
         port_int = int(port)
         if not (0 < port_int < 65536):
@@ -96,11 +96,11 @@ def _port_free(host: str, port: int, timeout: float = 0.1) -> bool:
 def _find_port(preferred: int, start: int = 5200) -> int:
     """
     Try to use preferred port, fall back to finding first available port.
-    
+
     Args:
         preferred: The preferred port number to try first
         start: Where to start searching if preferred port is taken
-        
+
     Returns:
         An available port number
     """
@@ -110,11 +110,11 @@ def _find_port(preferred: int, start: int = 5200) -> int:
     return _first_free_port(start)
 
 
-def _write_envfile(name: str, 
+def _write_envfile(name: str,
                    ports: Optional[dict[str, int]] = None) -> pathlib.Path:
     """
     Create a throw-away .env file for the current `invoke up` run.
-    
+
     Docker-compose will use this to see the chosen host-ports. We include all
     services we know about; anything unset falls back to .env.template defaults.
     """
@@ -124,15 +124,18 @@ def _write_envfile(name: str,
         "tensorboard": "HOST_TENSORBOARD_PORT",
         "explainer": "HOST_EXPLAINER_PORT",
         "streamlit": "HOST_STREAMLIT_PORT",
-        "mlflow": "HOST_MLFLOW_PORT",      # NEW
+        "mlflow": "HOST_MLFLOW_PORT",
+        "app": "HOST_APP_PORT",            # NFL Kicker App (production)
+        "frontend_dev": "HOST_FRONTEND_DEV_PORT",  # Frontend development server
+        "backend_dev": "HOST_BACKEND_DEV_PORT",    # Backend development server
     }
     for svc, var in mapping.items():
         if ports and svc in ports:
             env_lines.append(f"{var}={ports[svc]}")
     env_lines.append(f"# generated {_dt.datetime.now().isoformat()}")
     tmp = tempfile.NamedTemporaryFile(
-        "w", 
-        delete=False, 
+        "w",
+        delete=False,
         prefix=".env.",
         dir=BASE_ENV
     )
@@ -153,6 +156,19 @@ def _cleanup_env_files() -> None:
 
 
 atexit.register(_cleanup_env_files)
+
+
+def _load_env_file(env_file: pathlib.Path) -> dict[str, str]:
+    """Load environment variables from a file."""
+    env_vars = {}
+    if env_file.exists():
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_vars[key] = value
+    return env_vars
 
 
 def _compose(
@@ -179,18 +195,41 @@ def _compose(
 
     env = {**os.environ, "ENV_NAME": name, "COMPOSE_PROJECT_NAME": name}
     
+    # Add debug logging for environment variables
+    print("\n🔍 Debug: Environment Variables:")
+    print(f"ENV_NAME: {env.get('ENV_NAME', 'Not set')}")
+    print(f"PYTHON_VER: {env.get('PYTHON_VER', 'Not set')}")
+    print(f"JAX_PLATFORM_NAME: {env.get('JAX_PLATFORM_NAME', 'Not set')}")
+    print(f"XLA_PYTHON_CLIENT_PREALLOCATE: {env.get('XLA_PYTHON_CLIENT_PREALLOCATE', 'Not set')}")
+
+    # Load from .env.runtime if it exists (for VS Code dev containers)
+    env_file = BASE_ENV / ".devcontainer" / ".env.runtime"
+    if env_file.exists():
+        runtime_env = _load_env_file(env_file)
+        env.update(runtime_env)
+        print(f"🔧  Loaded runtime environment from {env_file}")
+        
+        # Debug: Print loaded runtime environment
+        print("\n🔍 Debug: Loaded Runtime Environment:")
+        for key, value in runtime_env.items():
+            print(f"{key}: {value}")
+
     # Add port overrides if provided
     if ports:
         port_mapping = {
             "jupyter": "HOST_JUPYTER_PORT",
-            "tensorboard": "HOST_TENSORBOARD_PORT", 
+            "tensorboard": "HOST_TENSORBOARD_PORT",
             "explainer": "HOST_EXPLAINER_PORT",
             "streamlit": "HOST_STREAMLIT_PORT",
+            "mlflow": "HOST_MLFLOW_PORT",
+            "app": "HOST_APP_PORT",
+            "frontend_dev": "HOST_FRONTEND_DEV_PORT",
+            "backend_dev": "HOST_BACKEND_DEV_PORT",
         }
         for service, port in ports.items():
             if service in port_mapping:
                 env[port_mapping[service]] = str(port)
-    
+
     use_pty = force_pty or (os.name != "nt" and sys.stdin.isatty())
 
     if not use_pty and not getattr(_compose, "_warned", False):
@@ -210,9 +249,12 @@ def _compose(
         "use_pty": "Force PTY even on non-POSIX hosts",
         "jupyter_port": "Jupyter Lab port (default: 8890)",
         "tensorboard_port": "TensorBoard port (default: auto-assigned)",
-        "explainer_port": "Explainer Dashboard port (default: auto-assigned)", 
+        "explainer_port": "Explainer Dashboard port (default: auto-assigned)",
         "streamlit_port": "Streamlit port (default: auto-assigned)",
-        "mlflow_port": "MLflow UI port (default: 5000, auto-assigns if busy)",
+        "mlflow_port": "MLflow UI port (default: 5001, auto-assigns if busy)",
+        "app_port": "NFL Kicker App port (default: 5000)",
+        "frontend_dev_port": "Frontend dev server port (default: 5173)",
+        "backend_dev_port": "Backend dev server port (default: 5002)",
     }
 )
 def up(
@@ -226,6 +268,9 @@ def up(
     explainer_port: Union[str, int, None] = None,
     streamlit_port: Union[str, int, None] = None,
     mlflow_port: Union[str, int, None] = None,
+    app_port: Union[str, int, None] = None,
+    frontend_dev_port: Union[str, int, None] = None,
+    backend_dev_port: Union[str, int, None] = None,
 ) -> None:
     """Build (optionally --rebuild) & start the container with custom ports."""
     name = name or BASE_ENV.name
@@ -237,6 +282,9 @@ def up(
         explainer_port = _parse_port(explainer_port)
         streamlit_port = _parse_port(streamlit_port)
         mlflow_port = _parse_port(mlflow_port)
+        app_port = _parse_port(app_port)
+        frontend_dev_port = _parse_port(frontend_dev_port)
+        backend_dev_port = _parse_port(backend_dev_port)
     except ValueError as e:
         print(f"❌ Port validation failed: {e}")
         sys.exit(1)
@@ -272,16 +320,49 @@ def up(
     ports["explainer"] = explainer_port
     print(f"🔌 Explainer host-port → {explainer_port}")
 
-    # ----- MLflow auto-assign (default 5000) -----------
+    # ----- MLflow auto-assign (default 5001) -----------
     print("DEBUG: Starting MLflow port assignment")  # Debug
     if mlflow_port is None:
         print("DEBUG: No MLflow port specified, finding one")  # Debug
-        mlflow_port = _find_port(5000, 5200)
+        mlflow_port = _find_port(5001, 5200)  # Changed default to 5001
     elif not _port_free("127.0.0.1", mlflow_port):
         print(f"DEBUG: Specified MLflow port {mlflow_port} is in use")  # Debug
         sys.exit(1)
     ports["mlflow"] = mlflow_port
     print(f"🔌 MLflow host-port → {mlflow_port}")
+
+    # ----- NFL Kicker App auto-assign (default 5000) ----
+    print("DEBUG: Starting NFL Kicker App port assignment")  # Debug
+    if app_port is None:
+        print("DEBUG: No app port specified, finding one")  # Debug
+        app_port = _find_port(5000, 5200)  # Prefer port 5000 for the app
+    elif not _port_free("127.0.0.1", app_port):
+        print(f"DEBUG: Specified app port {app_port} is in use")  # Debug
+        sys.exit(1)
+    ports["app"] = app_port
+    print(f"🔌 NFL Kicker App host-port → {app_port}")
+
+    # ----- Frontend Dev Server auto-assign (default 5173) ----
+    print("DEBUG: Starting Frontend Dev Server port assignment")  # Debug
+    if frontend_dev_port is None:
+        print("DEBUG: No frontend dev port specified, finding one")  # Debug
+        frontend_dev_port = _find_port(5173, 5200)  # Prefer port 5173 for frontend dev
+    elif not _port_free("127.0.0.1", frontend_dev_port):
+        print(f"DEBUG: Specified frontend dev port {frontend_dev_port} is in use")  # Debug
+        sys.exit(1)
+    ports["frontend_dev"] = frontend_dev_port
+    print(f"🔌 Frontend Dev Server host-port → {frontend_dev_port}")
+
+    # ----- Backend Dev Server auto-assign (default 5002) ----
+    print("DEBUG: Starting Backend Dev Server port assignment")  # Debug
+    if backend_dev_port is None:
+        print("DEBUG: No backend dev port specified, finding one")  # Debug
+        backend_dev_port = _find_port(5002, 5200)  # Use 5002 to avoid conflict with app port 5000
+    elif not _port_free("127.0.0.1", backend_dev_port):
+        print(f"DEBUG: Specified backend dev port {backend_dev_port} is in use")  # Debug
+        sys.exit(1)
+    ports["backend_dev"] = backend_dev_port
+    print(f"🔌 Backend Dev Server host-port → {backend_dev_port}")
 
     # Generate environment file
     env_path = _write_envfile(name, ports)
@@ -421,10 +502,10 @@ def down(c, name: str | None = None, all: bool = False, rmi: str = "local"):
 def dashboard(c, yaml: str, port: int = 8150, host: str = "0.0.0.0") -> None:
     """
     Serve a saved ExplainerDashboard from a YAML configuration file.
-    
+
     This task allows you to re-serve dashboards that were previously saved
     with build_and_log_dashboard(save_yaml=True).
-    
+
     Examples:
         invoke dashboard --yaml dashboard.yaml
         invoke dashboard --yaml dashboard.yaml --port 8200
@@ -432,25 +513,50 @@ def dashboard(c, yaml: str, port: int = 8150, host: str = "0.0.0.0") -> None:
     import sys
     from pathlib import Path
     from src.mlops.explainer import load_dashboard_yaml
-    
+
     yaml_path = Path(yaml)
     if not yaml_path.exists():
         print(f"❌ Dashboard YAML file not found: {yaml_path}")
         sys.exit(1)
-    
+
     # Check if port is available
     if not _port_free(host, port):
         print(f"❌ Port {port} is already in use on {host}")
         sys.exit(1)
-    
+
     try:
         print(f"🔄 Loading dashboard from {yaml_path}")
         dashboard_obj = load_dashboard_yaml(yaml_path)
-        
+
         print(f"🌐 Serving ExplainerDashboard on {host}:{port}")
         dashboard_obj.run(port=port, host=host, use_waitress=True, open_browser=False)
-        
+
     except Exception as e:
         print(f"❌ Failed to load or serve dashboard: {e}")
         sys.exit(1)
+
+
+@task
+def railway(c, cmd="--help", name=None):
+    """
+    Run Railway CLI commands inside the dev container.
+
+    Examples:
+        invoke railway "login --browserless"
+        invoke railway "link"
+        invoke railway "variables pull --env production --force"
+        invoke railway "run 'npm start'"
+        invoke railway "dev"
+        invoke railway "logs -f"
+        invoke railway "--version" --name my_project
+    """
+    project_name = name or BASE_ENV.name
+    container_id = c.run(f"docker compose -p {project_name} ps -q datascience", hide=True).stdout.strip()
+
+    if not container_id:
+        print(f"❌ No running container found for project '{project_name}'")
+        print("💡 Run 'invoke up --name {project_name}' first to start the dev container")
+        sys.exit(1)
+
+    c.run(f"docker exec {container_id} railway {cmd}", pty=False)
 
