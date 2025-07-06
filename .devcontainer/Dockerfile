@@ -38,9 +38,11 @@ RUN npm install -g @railway/cli
 COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /uvx /bin/
 
 # ----------------------------------------------------------------------------
-# 3) Create project dir & copy only the lock/manifest for best layer‑caching --
+# 3) Create project dir & copy only the lock/manifest for best layer-caching --
 WORKDIR /app
-COPY pyproject.toml uv.lock* ./
+# We've relocated project metadata into .devcontainer/ to keep the repo root clean
+# and ensure production builds use requirements.txt while dev builds use pyproject.toml
+COPY .devcontainer/pyproject.toml .devcontainer/uv.lock* ./
 
 # ----------------------------------------------------------------------------
 # 4) Create an in-project venv, install deps, then symlink into /workspace
@@ -123,3 +125,4 @@ RUN mkdir -p /root/.ipython/profile_default/startup && \
 
 # 13) Auto-activate uv venv in every login shell
 RUN echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
+
