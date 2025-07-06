@@ -1,2 +1,6 @@
 .env
 dev.env
+.devcontainer/.env.runtime
+
+# Railway CLI (never commit tokens)
+.railway/config.json

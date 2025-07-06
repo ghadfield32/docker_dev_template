@@ -11,24 +11,27 @@ ARG JAX_PREALLOCATE=true
 ARG JAX_MEM_FRAC=0.95
 ARG JAX_ALLOCATOR=platform
 ARG JAX_PREALLOC_LIMIT=8589934592
-ENV DEBIAN_FRONTEND=noninteractive
 
 # ----------------------------------------------------------------------------
 # 1) Core OS deps, build tools, & Python (system) -----------------------------
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y --no-install-recommends \
         bash curl ca-certificates git procps htop util-linux build-essential \
         python3 python3-venv python3-pip python3-dev \
         autoconf automake libtool m4 cmake pkg-config \
-        jags iproute2 net-tools lsof \
-        && pkg-config --modversion jags \
-        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        jags iproute2 net-tools lsof && \
+    pkg-config --modversion jags && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js for VS Code remote extension host
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get update && apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Railway CLI
+RUN npm install -g @railway/cli
 
 # ----------------------------------------------------------------------------
 # 2) Copy a *pinned* uv & uvx binary pair from the official distroless image --
@@ -120,6 +123,3 @@ RUN mkdir -p /root/.ipython/profile_default/startup && \
 
 # 13) Auto-activate uv venv in every login shell
 RUN echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
-
-
-
