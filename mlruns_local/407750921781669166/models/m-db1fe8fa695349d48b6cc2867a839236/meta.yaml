@@ -1,0 +1,10 @@
+artifact_location: /workspace/mlruns/models/m-db1fe8fa695349d48b6cc2867a839236/artifacts
+creation_timestamp: 1751745432538
+experiment_id: '407750921781669166'
+last_updated_timestamp: 1751745434840
+model_id: m-db1fe8fa695349d48b6cc2867a839236
+model_type: null
+name: breast_cancer_bayes
+source_run_id: 72a0d7fb4f84448da575812d96f948c5
+status: 2
+status_message: null

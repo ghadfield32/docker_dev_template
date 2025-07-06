@@ -1,0 +1,78 @@
+aliases: []
+creation_timestamp: 1751755165018
+current_stage: Production
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1751755166340
+metrics:
+- key: accuracy
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9876977152899824
+- key: f1_0
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9833729216152018
+- key: f1_1
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9902370990237099
+- key: f1_macro
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9868050103194559
+- key: log_loss
+  step: 0
+  timestamp: 1751755160225
+  value: 0.44341928598210933
+- key: mcc
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9736730798565391
+- key: n_draws
+  step: 0
+  timestamp: 1751755160768
+  value: 10.0
+- key: precision_0
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9904306220095693
+- key: precision_1
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9861111111111112
+- key: precision_macro
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9882708665603402
+- key: recall_0
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9764150943396226
+- key: recall_1
+  step: 0
+  timestamp: 1751755160225
+  value: 0.9943977591036415
+- key: recall_macro
+  step: 0
+  timestamp: 1751755160225
+  value: 0.985406426721632
+- key: support_0
+  step: 0
+  timestamp: 1751755160225
+  value: 212.0
+- key: support_1
+  step: 0
+  timestamp: 1751755160225
+  value: 357.0
+model_id: m-3c778080473447159387ae27bf5c36ed
+name: breast_cancer_bayes
+params: {}
+run_id: d0b0e774f21e4434a21100d3e3078ef7
+run_link: null
+source: models:/m-3c778080473447159387ae27bf5c36ed
+status: READY
+status_message: null
+storage_location: /workspace/mlruns/models/m-3c778080473447159387ae27bf5c36ed/artifacts
+user_id: null
+version: 2

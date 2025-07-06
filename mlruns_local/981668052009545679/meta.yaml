@@ -1,0 +1,6 @@
+artifact_location: /workspace/mlruns
+creation_time: 1751743559904
+experiment_id: '981668052009545679'
+last_update_time: 1751743559904
+lifecycle_stage: active
+name: ml_model_training

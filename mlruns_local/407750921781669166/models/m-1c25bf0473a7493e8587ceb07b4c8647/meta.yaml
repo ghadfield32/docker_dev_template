@@ -1,0 +1,10 @@
+artifact_location: /workspace/mlruns/models/m-1c25bf0473a7493e8587ceb07b4c8647/artifacts
+creation_timestamp: 1751742187110
+experiment_id: '407750921781669166'
+last_updated_timestamp: 1751742190120
+model_id: m-1c25bf0473a7493e8587ceb07b4c8647
+model_type: null
+name: iris_logreg
+source_run_id: 2fb64eafcdef48feaefd895d92add1ef
+status: 2
+status_message: null
