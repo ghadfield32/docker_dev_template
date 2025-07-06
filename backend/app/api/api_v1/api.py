@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from backend.app.api.api_v1.endpoints import iris, cancer, models
+from app.api.api_v1.endpoints import iris, cancer, models
 
 api_router = APIRouter()
 
