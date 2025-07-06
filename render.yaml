@@ -1,9 +1,15 @@
 services:
   - type: web
-    name: ml-backend
+    name: ml_backend
     runtime: python
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     autoDeploy: true
-    healthCheckPath: /health 
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: MLFLOW_TRACKING_URI
+        value: file:./mlruns_local

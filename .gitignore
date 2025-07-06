@@ -7,6 +7,7 @@ mlflow_db/
 mlruns_local/
 
 node_modules/
+frontend/node_modules/
 
 archive/
 .venv
