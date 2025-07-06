@@ -106,7 +106,7 @@ const MLModelFrontend = () => {
     const checkHealth = async () => {
       try {
         console.log('🔍 checkHealth DEBUG: Starting health check')
-        const response = await callApi('/health');
+        const response = await callApi('/api/v1/models/health');
         console.log('🔍 checkHealth DEBUG: Health check successful:', response)
         // Accept both healthy and degraded as OK states
         setApiHealth(response.status === 'degraded' ? 'healthy' : response.status);
@@ -230,7 +230,7 @@ const MLModelFrontend = () => {
           ]
         };
         console.log('🔍 handlePredict DEBUG: Calling iris prediction with payload:', payload)
-        result = await callApi('/iris/predict', payload)
+        result = await callApi('/api/v1/iris/predict', payload)
         console.log('🔍 handlePredict DEBUG: Iris prediction result:', result)
         result.class_name = result.predicted_classes[0] || 'Unknown'
         result.probability = 1
@@ -240,7 +240,7 @@ const MLModelFrontend = () => {
         const values = features
         const payload = { model_type: 'bayes', samples: [{ values }], posterior_samples: 100 }
         console.log('🔍 handlePredict DEBUG: Calling cancer prediction with payload:', payload)
-        result = await callApi('/cancer/predict', payload)
+        result = await callApi('/api/v1/cancer/predict', payload)
         console.log('🔍 handlePredict DEBUG: Cancer prediction result:', result)
         result.class_name = result.predicted_classes[0] || 'Unknown'
         result.probability = result.predictions[0]
@@ -781,3 +781,4 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
+
