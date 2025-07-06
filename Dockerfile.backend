@@ -1,0 +1,16 @@
+# Dockerfile.backend — Node.js backend for NFL Kicker API
+FROM node:18-alpine
+
+# 1. Set working directory
+WORKDIR /app
+
+# 2. Copy package definitions & install
+COPY src/backend/package*.json ./
+RUN npm ci --only=production
+
+# 3. Copy application code
+COPY src/backend/ ./
+
+# 4. Expose port & define default
+EXPOSE 5000
+CMD ["node", "server.js"] 

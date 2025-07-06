@@ -4,7 +4,11 @@
   "service": "datascience",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "runArgs": ["--gpus", "all"],
+  "initializeCommand": ".devcontainer/generate-project-name.sh",
+  "runArgs": [
+    "--gpus", "all",
+    "--env-file", "${localWorkspaceFolder}/.devcontainer/.env.runtime"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -34,18 +38,25 @@
         // 3. PYTHON AND JUPYTER SETTINGS
         "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
         "jupyter.interactiveWindow.textEditor.executeSelection": true,
-        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"]
+        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"],
+
+        // 4. LINE ENDING SETTINGS
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        "files.trimTrailingWhitespace": true
       }
     }
   },
   "remoteEnv": {
     "JUPYTER_ENABLE_LAB": "true"
   },
+  "remoteUser": "root",
 
   // After container creation, set up env, check UV, Python, and key libs
   "postCreateCommand": [
-    "/bin/sh",
+    "/bin/bash",
     "-c",
-    ".devcontainer/setup_env.sh && \\\necho '## uv diagnostics ##' && uv --version && \\\necho '## python ##' && which python && python -V && \\\nexec .devcontainer/verify_env.py"
+    "find /workspace -type f \\( -name '*.sh' -o -name '*.py' \\) -exec dos2unix {} \\; 2>/dev/null || true && find /workspace -type f -name '*.sh' -exec chmod +x {} \\; && .devcontainer/setup_env.sh && echo '## uv diagnostics ##' && uv --version && echo '## python ##' && which python && python -V && python - <<'PY'\nimport encodings, jupyterlab, torch, jax, sys, os\nprint('🟢 encodings OK', sys.executable)\nprint('🟢 jupyterlab OK')\nprint('🟢 torch', torch.__version__, 'CUDA:', torch.cuda.is_available())\nprint('🟢 jax', jax.__version__, 'devices:', jax.devices())\nPY"
   ]
 }

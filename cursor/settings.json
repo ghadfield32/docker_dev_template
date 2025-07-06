@@ -1,5 +1,0 @@
-{
-    "terminal.integrated.env.linux": {
-        "UV_PROJECT_ENVIRONMENT": "/app/.venv"
-    }
-} 
