@@ -17,7 +17,7 @@
     "recharts": "^2.8.0",
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
-    "lucide-react": "^0.453.0" 
+    "lucide-react": "^0.453.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

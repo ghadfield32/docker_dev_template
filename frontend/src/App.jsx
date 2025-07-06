@@ -742,4 +742,3 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
-

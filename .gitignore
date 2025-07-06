@@ -2,7 +2,6 @@
 dev.env
 .devcontainer/.env.runtime
 
-
 mlruns/
 mlflow_db/
 mlruns_local/
@@ -14,8 +13,6 @@ archive/
 uv.lock
 
 test_iris.json
-
-frontend/node_modules/
 .env.template
 
 # Railway CLI (never commit tokens)

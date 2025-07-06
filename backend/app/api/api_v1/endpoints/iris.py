@@ -136,4 +136,3 @@ async def retrain_iris(
     except Exception as e:
         logger.error(f"Failed to start iris retrain: {e}")
         raise HTTPException(status_code=500, detail=f"Retrain failed: {str(e)}")
-

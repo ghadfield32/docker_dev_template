@@ -6,9 +6,4 @@ services:
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
-    healthCheckPath: /health
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.0
-      - key: PYTHONPATH
-        value: /opt/render/project/src/backend 
+    healthCheckPath: /health 

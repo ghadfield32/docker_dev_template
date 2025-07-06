@@ -14,12 +14,6 @@ from mlflow.tracking import MlflowClient
 from ...core.config import settings
 from ...schemas.common import HealthResponse, ModelInfo
 
-# Add the src directory to Python path for importing existing ML code
-workspace_root = Path(__file__).resolve().parents[4]  # Go up to workspace root
-src_path = workspace_root / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
 # Import existing ML utilities
 try:
     from backend.ML.mlops.experiment_utils import setup_mlflow_experiment
@@ -418,3 +412,4 @@ class ModelService:
 
 # Global model service instance
 model_service = ModelService()
+
