@@ -1,0 +1,14 @@
+artifact_uri: /workspace/mlruns/d0b0e774f21e4434a21100d3e3078ef7/artifacts
+end_time: 1751755166950
+entry_point_name: ''
+experiment_id: '407750921781669166'
+lifecycle_stage: active
+run_id: d0b0e774f21e4434a21100d3e3078ef7
+run_name: breast_cancer_bayes
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751755158348
+status: 3
+tags: []
+user_id: root
