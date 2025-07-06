@@ -360,20 +360,24 @@ class ModelService:
         """
         logger.info(f"Starting Iris retrain with {n_trials} trials")
 
-        try:
-            if run_all_trainings:
-                run_all_trainings(n_trials=n_trials)
-                await self._promote_latest_to_production("iris_random_forest")
-                await self._promote_latest_to_production("iris_logreg")
-                await self._load_models()  # hot-reload cache
+        if run_all_trainings is None:
+            logger.info("Training module not available in this deployment")
+            raise RuntimeError(
+                "Training module not available in this deployment. "
+                "This is expected in production environments."
+            )
 
-                # Surface new metrics
-                metrics = await self.get_model_metrics()
-                iris_metrics = metrics.get("iris_random_forest", {})
-                logger.info(f"Iris retrain completed. New accuracy: {iris_metrics.get('accuracy')}")
-                return iris_metrics
-            else:
-                raise RuntimeError("run_all_trainings not available")
+        try:
+            run_all_trainings(n_trials=n_trials)
+            await self._promote_latest_to_production("iris_random_forest")
+            await self._promote_latest_to_production("iris_logreg")
+            await self._load_models()  # hot-reload cache
+
+            # Surface new metrics
+            metrics = await self.get_model_metrics()
+            iris_metrics = metrics.get("iris_random_forest", {})
+            logger.info(f"Iris retrain completed. New accuracy: {iris_metrics.get('accuracy')}")
+            return iris_metrics
 
         except Exception as e:
             logger.error(f"Iris retrain failed: {e}")
@@ -390,23 +394,27 @@ class ModelService:
         """
         logger.info(f"Starting Cancer Bayesian retrain: draws={draws}, tune={tune}, target_accept={target_accept}")
 
-        try:
-            if train_bayes_logreg:
-                train_bayes_logreg(
-                    draws=draws,
-                    tune=tune,
-                    register=True,
-                    target_accept=target_accept
-                )
-                await self._promote_latest_to_production("breast_cancer_bayes")
-                await self._load_models()
+        if train_bayes_logreg is None:
+            logger.info("Bayesian training module not available in this deployment")
+            raise RuntimeError(
+                "Bayesian training module not available in this deployment. "
+                "This is expected in production environments."
+            )
 
-                metrics = await self.get_model_metrics()
-                cancer_metrics = metrics.get("breast_cancer_bayes", {})
-                logger.info(f"Cancer retrain completed. New accuracy: {cancer_metrics.get('accuracy')}")
-                return cancer_metrics
-            else:
-                raise RuntimeError("train_bayes_logreg not available")
+        try:
+            train_bayes_logreg(
+                draws=draws,
+                tune=tune,
+                register=True,
+                target_accept=target_accept
+            )
+            await self._promote_latest_to_production("breast_cancer_bayes")
+            await self._load_models()
+
+            metrics = await self.get_model_metrics()
+            cancer_metrics = metrics.get("breast_cancer_bayes", {})
+            logger.info(f"Cancer retrain completed. New accuracy: {cancer_metrics.get('accuracy')}")
+            return cancer_metrics
 
         except Exception as e:
             logger.error(f"Cancer retrain failed: {e}")
@@ -415,6 +423,7 @@ class ModelService:
 
 # Global model service instance
 model_service = ModelService()
+
 
 
 
