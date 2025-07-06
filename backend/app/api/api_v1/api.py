@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+# 🔧 Adjusted imports to use relative paths for Render deployment
 from app.api.api_v1.endpoints import iris, cancer, models
 
 api_router = APIRouter()

@@ -15,6 +15,9 @@ from ...core.config import settings
 from ...schemas.common import HealthResponse, ModelInfo
 
 # Import existing ML utilities
+# 🔧 Note: These backend.ML imports are for optional ML training modules
+#     that may not be present in all deployments. They're kept as-is since
+#     they're already wrapped in try-except and are optional.
 try:
     from backend.ML.mlops.experiment_utils import setup_mlflow_experiment
     from backend.ML.mlops.training import run_all_trainings

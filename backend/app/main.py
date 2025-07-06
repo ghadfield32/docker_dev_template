@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# 🔧 Adjusted imports to use "app." as the top-level package
+#     so that when rootDir=backend, Python can resolve modules.
 from app.core.config import settings
 from app.api.api_v1.api import api_router
 from app.services.ml.model_service import model_service
