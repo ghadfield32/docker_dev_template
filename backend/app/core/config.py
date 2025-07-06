@@ -27,7 +27,7 @@ class Settings:
     MLFLOW_EXPERIMENT_NAME: str = "ml_fullstack_models"
 
     # Model settings
-    DEV_AUTOTRAIN: bool = os.getenv("DEV_AUTOTRAIN", "true").lower() == "true"
+    DEV_AUTOTRAIN: bool = os.getenv("DEV_AUTOTRAIN", "true").lower() in ["true", "1", "yes", "on"]
 
     # Database settings (if needed later)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
@@ -35,3 +35,4 @@ class Settings:
 
 # Global settings instance
 settings = Settings()
+

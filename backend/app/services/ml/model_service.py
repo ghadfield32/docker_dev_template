@@ -4,12 +4,19 @@ import logging
 import sys
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import numpy as np
 import pandas as pd
 import mlflow
 import mlflow.pyfunc
 from mlflow.tracking import MlflowClient
+
+# Add scikit-learn imports for fallback models
+from sklearn.datasets import load_iris, load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 from ...core.config import settings
 from ...schemas.common import HealthResponse, ModelInfo
@@ -36,27 +43,30 @@ class ModelService:
 
     def __init__(self):
         """Initialize the model service."""
-        self.models: Dict[str, mlflow.pyfunc.PyFuncModel] = {}
+        self.models: Dict[str, Union[mlflow.pyfunc.PyFuncModel, Any]] = {}
         self.model_info: Dict[str, Dict[str, Any]] = {}
         self.mlflow_client: Optional[MlflowClient] = None
         self.initialized = False
 
-        # Model configurations
+        # Model configurations - updated to match prediction naming
         self.model_configs = {
-            "iris_random_forest": {
+            "iris_rf": {
                 "type": "classification",
                 "dataset": "iris",
-                "class_names": ["setosa", "versicolor", "virginica"]
+                "class_names": ["setosa", "versicolor", "virginica"],
+                "full_name": "iris_random_forest"
             },
             "iris_logreg": {
                 "type": "classification",
                 "dataset": "iris",
-                "class_names": ["setosa", "versicolor", "virginica"]
+                "class_names": ["setosa", "versicolor", "virginica"],
+                "full_name": "iris_logreg"
             },
             "breast_cancer_bayes": {
                 "type": "classification",
                 "dataset": "breast_cancer",
-                "class_names": ["malignant", "benign"]
+                "class_names": ["malignant", "benign"],
+                "full_name": "breast_cancer_bayes"
             }
         }
 
@@ -80,6 +90,10 @@ class ModelService:
             # Load models
             await self._load_models()
 
+            # 🔧 FALLBACK: Load in-memory models if MLflow models are not available
+            if settings.DEV_AUTOTRAIN:
+                await self._load_fallback_models()
+
             self.initialized = True
             logger.info("✅ ModelService initialized successfully")
 
@@ -98,12 +112,14 @@ class ModelService:
         """Load all models from MLflow registry."""
         logger.info("Loading models from MLflow registry...")
 
-        for model_name in self.model_configs.keys():
+        for model_name, config in self.model_configs.items():
             try:
-                model = await self._load_production_model(model_name)
+                # Try to load using the full MLflow model name
+                full_model_name = config.get("full_name", model_name)
+                model = await self._load_production_model(full_model_name)
                 if model:
-                    self.models[model_name] = model
-                    logger.info(f"✅ Loaded model: {model_name}")
+                    self.models[model_name] = model  # Store with prediction-friendly name
+                    logger.info(f"✅ Loaded model: {model_name} (from {full_model_name})")
                 else:
                     logger.warning(f"⚠️ Model {model_name} not loaded")
 
@@ -159,7 +175,10 @@ class ModelService:
         logger.info(f"Auto-training model {model_name}...")
 
         try:
-            if model_name in ["iris_random_forest", "iris_logreg"] and run_all_trainings:
+            config = self.model_configs.get(model_name, {})
+            full_model_name = config.get("full_name", model_name)
+
+            if model_name in ["iris_rf", "iris_logreg"] and run_all_trainings:
                 # Train both iris models
                 run_all_trainings(n_trials=10)  # Quick training for demo
 
@@ -167,11 +186,11 @@ class ModelService:
                 # Train bayesian model
                 train_bayes_logreg(draws=100, tune=50, register=True)
 
-            # Promote to production
-            await self._promote_latest_to_production(model_name)
+            # Promote to production using full model name
+            await self._promote_latest_to_production(full_model_name)
 
             # Try to load again
-            model = await self._load_production_model(model_name)
+            model = await self._load_production_model(full_model_name)
             if model:
                 self.models[model_name] = model
                 logger.info(f"✅ Auto-trained and loaded model: {model_name}")
@@ -375,7 +394,7 @@ class ModelService:
 
             # Surface new metrics
             metrics = await self.get_model_metrics()
-            iris_metrics = metrics.get("iris_random_forest", {})
+            iris_metrics = metrics.get("iris_rf", {})
             logger.info(f"Iris retrain completed. New accuracy: {iris_metrics.get('accuracy')}")
             return iris_metrics
 
@@ -420,12 +439,88 @@ class ModelService:
             logger.error(f"Cancer retrain failed: {e}")
             raise
 
+    async def _load_fallback_models(self) -> None:
+        """Load fallback in-memory models using scikit-learn datasets."""
+        logger.info("Checking for missing models and loading fallbacks...")
+
+        # Fallback for iris models
+        if "iris_rf" not in self.models:
+            logger.info("⚠️ Fallback: training in-memory iris_rf model using sklearn iris dataset")
+            iris_data = load_iris()
+            X_train, X_test, y_train, y_test = train_test_split(
+                iris_data.data, iris_data.target, test_size=0.2, random_state=42
+            )
+            
+            clf = RandomForestClassifier(n_estimators=100, random_state=42)
+            clf.fit(X_train, y_train)
+            
+            # Calculate accuracy
+            accuracy = accuracy_score(y_test, clf.predict(X_test))
+            
+            self.models["iris_rf"] = clf
+            self.model_info["iris_rf"] = {
+                "name": "iris_rf",
+                "version": "fallback",
+                "status": "loaded",
+                "accuracy": accuracy,
+                "run_id": "fallback",
+                "created_at": None,
+                "metrics": {"accuracy": accuracy}
+            }
+            logger.info(f"✅ Loaded fallback iris_rf model with accuracy: {accuracy:.3f}")
+
+        if "iris_logreg" not in self.models:
+            logger.info("⚠️ Fallback: training in-memory iris_logreg model using sklearn iris dataset")
+            iris_data = load_iris()
+            X_train, X_test, y_train, y_test = train_test_split(
+                iris_data.data, iris_data.target, test_size=0.2, random_state=42
+            )
+            
+            clf = LogisticRegression(random_state=42, max_iter=1000)
+            clf.fit(X_train, y_train)
+            
+            # Calculate accuracy
+            accuracy = accuracy_score(y_test, clf.predict(X_test))
+            
+            self.models["iris_logreg"] = clf
+            self.model_info["iris_logreg"] = {
+                "name": "iris_logreg",
+                "version": "fallback",
+                "status": "loaded",
+                "accuracy": accuracy,
+                "run_id": "fallback",
+                "created_at": None,
+                "metrics": {"accuracy": accuracy}
+            }
+            logger.info(f"✅ Loaded fallback iris_logreg model with accuracy: {accuracy:.3f}")
+
+        # Fallback for cancer models
+        if "breast_cancer_bayes" not in self.models:
+            logger.info("⚠️ Fallback: training in-memory breast_cancer_bayes model using sklearn breast cancer dataset")
+            cancer_data = load_breast_cancer()
+            X_train, X_test, y_train, y_test = train_test_split(
+                cancer_data.data, cancer_data.target, test_size=0.2, random_state=42
+            )
+            
+            # Use logistic regression as fallback for bayesian model
+            clf = LogisticRegression(random_state=42, max_iter=1000)
+            clf.fit(X_train, y_train)
+            
+            # Calculate accuracy
+            accuracy = accuracy_score(y_test, clf.predict(X_test))
+            
+            self.models["breast_cancer_bayes"] = clf
+            self.model_info["breast_cancer_bayes"] = {
+                "name": "breast_cancer_bayes",
+                "version": "fallback",
+                "status": "loaded",
+                "accuracy": accuracy,
+                "run_id": "fallback",
+                "created_at": None,
+                "metrics": {"accuracy": accuracy}
+            }
+            logger.info(f"✅ Loaded fallback breast_cancer_bayes model with accuracy: {accuracy:.3f}")
+
 
 # Global model service instance
 model_service = ModelService()
-
-
-
-
-
-
