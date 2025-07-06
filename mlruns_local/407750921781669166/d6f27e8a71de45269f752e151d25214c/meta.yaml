@@ -1,0 +1,14 @@
+artifact_uri: /workspace/mlruns/d6f27e8a71de45269f752e151d25214c/artifacts
+end_time: 1751755144084
+entry_point_name: ''
+experiment_id: '407750921781669166'
+lifecycle_stage: active
+run_id: d6f27e8a71de45269f752e151d25214c
+run_name: rf_optimized
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751755125481
+status: 3
+tags: []
+user_id: root

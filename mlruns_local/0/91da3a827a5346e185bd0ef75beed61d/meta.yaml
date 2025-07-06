@@ -1,0 +1,14 @@
+artifact_uri: file:///workspace/mlruns_local/0/91da3a827a5346e185bd0ef75beed61d/artifacts
+end_time: 1751739863133
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 91da3a827a5346e185bd0ef75beed61d
+run_name: iris_rf
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751739860239
+status: 3
+tags: []
+user_id: root

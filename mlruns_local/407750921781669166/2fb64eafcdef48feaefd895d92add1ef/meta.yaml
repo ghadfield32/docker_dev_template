@@ -1,0 +1,14 @@
+artifact_uri: /workspace/mlruns/2fb64eafcdef48feaefd895d92add1ef/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '407750921781669166'
+lifecycle_stage: active
+run_id: 2fb64eafcdef48feaefd895d92add1ef
+run_name: lr_baseline
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751742186034
+status: 1
+tags: []
+user_id: root
