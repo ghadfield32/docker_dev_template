@@ -18,8 +18,7 @@ class Settings:
         "http://localhost:5173",  # Vite dev server
         "http://localhost:8080",  # Alternative frontend
         "http://localhost:5000",  # Another common port
-        "https://*.netlify.app",  # Netlify deployments
-        "*",  # Allow all origins for development/testing
+        "*",  # Allow all origins in development
     ]
 
     # MLflow settings
@@ -27,7 +26,7 @@ class Settings:
     MLFLOW_EXPERIMENT_NAME: str = "ml_fullstack_models"
 
     # Model settings
-    DEV_AUTOTRAIN: bool = os.getenv("DEV_AUTOTRAIN", "true").lower() in ["true", "1", "yes", "on"]
+    DEV_AUTOTRAIN: bool = os.getenv("DEV_AUTOTRAIN", "true").lower() == "true"
 
     # Database settings (if needed later)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
@@ -35,4 +34,3 @@ class Settings:
 
 # Global settings instance
 settings = Settings()
-

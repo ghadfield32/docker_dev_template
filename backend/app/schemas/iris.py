@@ -8,10 +8,10 @@ from .common import PredictionResponse
 
 class IrisFeatures(BaseModel):
     """Single Iris flower measurement."""
-    sepal_length: float = Field(..., ge=0.0, le=10.0, description="Sepal length in cm (0.0-10.0)")
-    sepal_width: float = Field(..., ge=0.0, le=6.0, description="Sepal width in cm (0.0-6.0)")
-    petal_length: float = Field(..., ge=0.0, le=10.0, description="Petal length in cm (0.0-10.0)")
-    petal_width: float = Field(..., ge=0.0, le=4.0, description="Petal width in cm (0.0-4.0)")
+    sepal_length: float = Field(..., ge=4.0, le=8.0, description="Sepal length in cm")
+    sepal_width: float = Field(..., ge=2.0, le=4.5, description="Sepal width in cm")
+    petal_length: float = Field(..., ge=1.0, le=7.0, description="Petal length in cm")
+    petal_width: float = Field(..., ge=0.1, le=2.5, description="Petal width in cm")
 
     class Config:
         """Pydantic config."""
@@ -28,15 +28,10 @@ class IrisFeatures(BaseModel):
 class IrisPredictRequest(BaseModel):
     """Iris prediction request schema."""
     model_type: str = Field("rf", description="Model type: 'rf' or 'logreg'")
-    samples: List[IrisFeatures] = Field(
-        ...,
-        alias="rows",  # Allow 'rows' as an alias for backward compatibility
-        description="List of iris measurements"
-    )
+    samples: List[IrisFeatures] = Field(..., description="List of iris measurements")
 
     class Config:
         """Pydantic config."""
-        populate_by_name = True  # Enable alias support
         json_schema_extra = {
             "example": {
                 "model_type": "rf",
@@ -46,6 +41,12 @@ class IrisPredictRequest(BaseModel):
                         "sepal_width": 3.5,
                         "petal_length": 1.4,
                         "petal_width": 0.2
+                    },
+                    {
+                        "sepal_length": 6.2,
+                        "sepal_width": 3.4,
+                        "petal_length": 5.4,
+                        "petal_width": 2.3
                     }
                 ]
             }
@@ -93,4 +94,3 @@ class IrisTrainingRequest(BaseModel):
                 }
             }
         }
-

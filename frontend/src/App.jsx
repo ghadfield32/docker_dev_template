@@ -26,14 +26,11 @@ const MLModelFrontend = () => {
   // --- Real API helper  ---------------------------------------------------
   const callApi = async (path, payload = null, opts = {}) => {
     /*
-      Direct frontend→FastAPI communication using environment variable.
-      In development: uses Vite proxy to localhost:8000
-      In production: uses VITE_API_URL environment variable
+      Direct frontend→FastAPI communication using the `/api/v1` prefix.
+      Vite dev server proxies `/api/v1` calls directly to FastAPI.
+      This eliminates the Express proxy layer.
     */
-    const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
-    const url = path.startsWith('/api/v1') ? 
-      `${API_BASE.replace('/api/v1', '')}${path}` : 
-      `${API_BASE}${path}`
+    const url = path.startsWith('/api/v1') ? path : `/api/v1${path}`
 
     // 🔍 DEBUG: Log the exact URL being called
     console.log('🔍 callApi DEBUG:', {
@@ -106,10 +103,9 @@ const MLModelFrontend = () => {
     const checkHealth = async () => {
       try {
         console.log('🔍 checkHealth DEBUG: Starting health check')
-        const response = await callApi('/api/v1/models/health');
+        const response = await callApi('/health');
         console.log('🔍 checkHealth DEBUG: Health check successful:', response)
-        // Accept both healthy and degraded as OK states
-        setApiHealth(response.status === 'degraded' ? 'healthy' : response.status);
+        setApiHealth(response.status);
       } catch (error) {
         console.error('❌ checkHealth DEBUG: Health check failed:', error)
         setApiHealth('error');
@@ -190,59 +186,34 @@ const MLModelFrontend = () => {
 
   // Make prediction
   const handlePredict = async () => {
-    let result; // ⚠️ Declare variable to avoid strict-mode error
     try {
       console.log('🔍 handlePredict DEBUG: Starting prediction for dataset:', selectedDataset)
-      
-      // Validate input ranges for iris dataset
+      const features = Object.values(inputData).map(val => parseFloat(val) || 0);
+      let result
       if (selectedDataset === 'iris') {
-        const validationRules = {
-          sepal_length: { min: 4.0, max: 8.0 },
-          sepal_width: { min: 2.0, max: 4.5 },
-          petal_length: { min: 1.0, max: 7.0 },
-          petal_width: { min: 0.1, max: 2.5 }
-        };
-
-        const errors = [];
-        Object.entries(validationRules).forEach(([field, { min, max }]) => {
-          const value = parseFloat(inputData[field]);
-          if (isNaN(value)) {
-            errors.push(`${field} must be a number`);
-          } else if (value < min || value > max) {
-            errors.push(`${field} must be between ${min} and ${max}`);
-          }
-        });
-
-        if (errors.length > 0) {
-          alert(`Please fix the following errors:\n${errors.join('\n')}`);
-          return;
-        }
-
         const payload = {
-          model_type: 'rf',
-          samples: [
+          rows: [
             {
-              sepal_length: parseFloat(inputData.sepal_length),
-              sepal_width: parseFloat(inputData.sepal_width),
-              petal_length: parseFloat(inputData.petal_length),
-              petal_width: parseFloat(inputData.petal_width)
-            }
-          ]
-        };
+              sepal_length: parseFloat(inputData.sepal_length) || 0,
+              sepal_width: parseFloat(inputData.sepal_width) || 0,
+              petal_length: parseFloat(inputData.petal_length) || 0,
+              petal_width: parseFloat(inputData.petal_width) || 0,
+            },
+          ],
+        }
         console.log('🔍 handlePredict DEBUG: Calling iris prediction with payload:', payload)
-        result = await callApi('/api/v1/iris/predict', payload)
+        result = await callApi('/iris/predict', payload)
         console.log('🔍 handlePredict DEBUG: Iris prediction result:', result)
-        result.class_name = result.predicted_classes[0] || 'Unknown'
+        result.class_name = result.predictions[0] === 0 ? 'Setosa' : 'Non-Setosa'
         result.probability = 1
         result.confidence = 1
       } else {
-        const features = Object.values(inputData).map(val => parseFloat(val) || 0);
         const values = features
-        const payload = { model_type: 'bayes', samples: [{ values }], posterior_samples: 100 }
+        const payload = { rows: [{ values }], posterior_samples: 100 }
         console.log('🔍 handlePredict DEBUG: Calling cancer prediction with payload:', payload)
-        result = await callApi('/api/v1/cancer/predict', payload)
+        result = await callApi('/cancer/predict', payload)
         console.log('🔍 handlePredict DEBUG: Cancer prediction result:', result)
-        result.class_name = result.predicted_classes[0] || 'Unknown'
+        result.class_name = result.predictions[0] > 0.5 ? 'Malignant' : 'Benign'
         result.probability = result.predictions[0]
         result.confidence = 1
       }
@@ -256,16 +227,6 @@ const MLModelFrontend = () => {
       }]);
     } catch (error) {
       console.error('❌ handlePredict Error:', error);
-      if (error.response?.data?.detail?.valid_ranges) {
-        const ranges = error.response.data.detail.valid_ranges;
-        alert(`Invalid input ranges. Please use these ranges:\n${
-          Object.entries(ranges)
-            .map(([field, range]) => `${field}: ${range}`)
-            .join('\n')
-        }`);
-      } else {
-        alert(`Prediction failed: ${error.message}`);
-      }
     }
   };
 
@@ -781,4 +742,3 @@ const MLModelFrontend = () => {
 };
 
 export default MLModelFrontend;
-

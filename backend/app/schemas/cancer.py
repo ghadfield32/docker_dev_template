@@ -7,26 +7,21 @@ from .common import PredictionResponse
 
 
 class CancerFeatures(BaseModel):
-    """
-    Breast cancer feature vector.
-    We *prefer* 30 features (the full sklearn dataset), but will accept
-    any list **between 5 and 30 items** and pad/truncate server-side.
-    """
+    """Breast cancer features in the correct order for sklearn breast cancer dataset."""
+    # Using a list to match the sklearn breast cancer dataset exactly
     values: List[float] = Field(
         ...,
-        min_items=5,      # ⬅️ loosened from 30
-        max_items=50,     # Allow more, will truncate in validator
-        description="5–30 numeric features (will be padded/truncated to 30 server-side)"
+        min_items=30,
+        max_items=30,
+        description="30 features from breast cancer dataset"
     )
 
     @field_validator("values")
     @classmethod
     def validate_feature_count(cls, v: List[float]) -> List[float]:
-        """Validate 5-30 features and optionally truncate if too many."""
-        if len(v) < 5:
-            raise ValueError("Provide at least 5 features")
-        if len(v) > 30:
-            return v[:30]     # silently truncate extras to 30
+        """Validate exactly 30 features."""
+        if len(v) != 30:
+            raise ValueError("Must provide exactly 30 features")
         return v
 
     class Config:
@@ -122,4 +117,3 @@ class CancerTrainingRequest(BaseModel):
                 }
             }
         }
-

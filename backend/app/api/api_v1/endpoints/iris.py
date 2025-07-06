@@ -3,7 +3,6 @@
 import logging
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from pydantic import ValidationError
 from ....schemas.iris import (
     IrisPredictRequest,
     IrisPredictResponse,
@@ -35,22 +34,6 @@ async def predict_iris(request: IrisPredictRequest):
 
         return IrisPredictResponse(**result)
 
-    except ValidationError as e:
-        # Log validation errors with details
-        logger.warning(f"Validation error in iris predict: {e.errors()}")
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "message": "Invalid input data",
-                "errors": e.errors(),
-                "valid_ranges": {
-                    "sepal_length": "4.0-8.0 cm",
-                    "sepal_width": "2.0-4.5 cm",
-                    "petal_length": "1.0-7.0 cm",
-                    "petal_width": "0.1-2.5 cm"
-                }
-            }
-        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -136,11 +119,6 @@ async def retrain_iris(
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(model_service.retrain_iris(n_trials=n_trials))
-            except RuntimeError as e:
-                if "run_all_trainings not available" in str(e):
-                    logger.info("Training module not available in this deployment")
-                else:
-                    logger.error(f"Background iris retrain failed: {e}")
             except Exception as e:
                 logger.error(f"Background iris retrain failed: {e}")
             finally:
