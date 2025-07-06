@@ -108,7 +108,7 @@ class ModelService:
                     logger.warning(f"⚠️ Model {model_name} not loaded")
 
             except Exception as e:
-                logger.error(f"❌ Failed to load model {model_name}: {e}")
+                logger.info(f"⚠️ Model {model_name} not loaded - will auto-train if enabled: {e}")
 
                 # Auto-train if enabled
                 if settings.DEV_AUTOTRAIN:
@@ -123,7 +123,7 @@ class ModelService:
             )
 
             if not versions:
-                logger.warning(f"No Production version found for model {model_name}")
+                logger.info(f"No Production version found for model {model_name} - will auto-train if enabled")
                 return None
 
             version = versions[0]
@@ -148,7 +148,7 @@ class ModelService:
             return model
 
         except Exception as e:
-            logger.error(f"Error loading model {model_name}: {e}")
+            logger.info(f"Model {model_name} not yet in registry - skipping: {e}")
             return None
 
     async def _auto_train_model(self, model_name: str) -> None:
@@ -415,5 +415,8 @@ class ModelService:
 
 # Global model service instance
 model_service = ModelService()
+
+
+
 
 

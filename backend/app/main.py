@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - startup and shutdown."""
-    logger.info("🚀 Starting ML Full Stack API...")
+    logger.info("🌀 [lifespan] Entering lifespan—about to init services")
 
     try:
         # Initialize ML service
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"❌ Failed to initialize ML service: {e}")
         raise
     finally:
-        logger.info("🔄 Shutting down ML Full Stack API...")
+        logger.info("🌀 [lifespan] After yield—now shutting down")
         await model_service.cleanup()
 
 
@@ -71,6 +71,12 @@ def create_application() -> FastAPI:
             "health_url": f"{settings.API_V1_STR}/health"
         }
 
+    @app.head("/", include_in_schema=False)
+    async def root_head():
+        """Root HEAD endpoint for Render probes."""
+        from fastapi.responses import Response
+        return Response(status_code=200)
+
     @app.get("/health")
     async def health():
         """Health check endpoint."""
@@ -87,3 +93,4 @@ def create_application() -> FastAPI:
 
 # Create the application instance
 app = create_application()
+
