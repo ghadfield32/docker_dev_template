@@ -140,42 +140,81 @@ class ModelService:
                 if settings.DEV_AUTOTRAIN:
                     await self._auto_train_model(model_name)
 
-    async def _load_production_model(self, model_name: str) -> Optional[mlflow.pyfunc.PyFuncModel]:
-        """Load a model from the Production stage in MLflow registry."""
+    async def _load_production_model(
+        self, model_name: str
+    ) -> Optional[mlflow.pyfunc.PyFuncModel]:
+        """
+        Load the latest Production model version via the new search API,
+        since get_latest_versions(...) is deprecated.
+        """
         try:
-            # Try to get the latest Production version
-            versions = self.mlflow_client.get_latest_versions(
-                model_name, stages=["Production"]
-            )
+            # 1️⃣ Search all versions of this registered model
+            all_versions = self.mlflow_client.search_model_versions(f"name='{model_name}'")
 
-            if not versions:
-                logger.info(f"No Production version found for model {model_name} - will auto-train if enabled")
+            # 2️⃣ Filter for Production stage
+            prod_versions = [v for v in all_versions if v.current_stage == "Production"]
+            if not prod_versions:
+                logger.info(f"No Production version found for model {model_name}")
                 return None
 
-            version = versions[0]
-            model_uri = f"models:/{model_name}/Production"
+            # 3️⃣ Pick the highest version number
+            #    (ModelVersion.version is a string)
+            prod_versions.sort(key=lambda v: int(v.version), reverse=True)
+            chosen = prod_versions[0]
 
-            # Load the model
+            # 4️⃣ Load the model by URI
+            model_uri = f"models:/{model_name}/Production"
             model = mlflow.pyfunc.load_model(model_uri)
 
-            # Store model info
-            run = self.mlflow_client.get_run(version.run_id)
+            # 5️⃣ Fetch run info and store metadata
+            run = self.mlflow_client.get_run(chosen.run_id)
             self.model_info[model_name] = {
                 "name": model_name,
-                "version": version.version,
+                "version": chosen.version,
                 "status": "loaded",
-                "stage": version.current_stage,
-                "run_id": version.run_id,
+                "stage": chosen.current_stage,
+                "run_id": chosen.run_id,
                 "accuracy": run.data.metrics.get("accuracy"),
-                "created_at": version.creation_timestamp,
-                "metrics": run.data.metrics
+                "created_at": chosen.creation_timestamp,
+                "metrics": run.data.metrics,
             }
 
+            logger.info(f"✅ Loaded {model_name} v{chosen.version} from Production")
             return model
 
         except Exception as e:
-            logger.info(f"Model {model_name} not yet in registry - skipping: {e}")
+            logger.warning(f"Could not load production model {model_name}: {e}")
             return None
+
+    async def _promote_latest_to_production(self, model_name: str) -> None:
+        """
+        Promote the newest un-staged version to Production,
+        using search_model_versions(...) to find the latest.
+        """
+        try:
+            # Search all versions for this model
+            all_versions = self.mlflow_client.search_model_versions(f"name='{model_name}'")
+
+            # Filter out already in Production
+            none_versions = [v for v in all_versions if v.current_stage != "Production"]
+            if not none_versions:
+                logger.info(f"No non-Production versions to promote for {model_name}")
+                return
+
+            # Pick the highest version number among them
+            none_versions.sort(key=lambda v: int(v.version), reverse=True)
+            to_promote = none_versions[0]
+
+            # Transition it
+            self.mlflow_client.transition_model_version_stage(
+                name=model_name,
+                version=to_promote.version,
+                stage="Production",
+                archive_existing_versions=True,
+            )
+            logger.info(f"Promoted {model_name} v{to_promote.version} to Production")
+        except Exception as e:
+            logger.error(f"Failed to promote {model_name}: {e}")
 
     async def _auto_train_model(self, model_name: str) -> None:
         """Auto-train a model if auto-training is enabled."""
@@ -208,26 +247,7 @@ class ModelService:
         except Exception as e:
             logger.error(f"Auto-training failed for {model_name}: {e}")
 
-    async def _promote_latest_to_production(self, model_name: str) -> None:
-        """Promote the latest model version to Production."""
-        try:
-            # Get latest version from None stage
-            latest_versions = self.mlflow_client.get_latest_versions(
-                model_name, stages=["None"]
-            )
 
-            if latest_versions:
-                version = latest_versions[0]
-                self.mlflow_client.transition_model_version_stage(
-                    name=model_name,
-                    version=version.version,
-                    stage="Production",
-                    archive_existing_versions=True
-                )
-                logger.info(f"Promoted {model_name} v{version.version} to Production")
-
-        except Exception as e:
-            logger.error(f"Failed to promote {model_name}: {e}")
 
     async def predict_iris(
         self,
