@@ -8,10 +8,10 @@ from .common import PredictionResponse
 
 class IrisFeatures(BaseModel):
     """Single Iris flower measurement."""
-    sepal_length: float = Field(..., ge=4.0, le=8.0, description="Sepal length in cm")
-    sepal_width: float = Field(..., ge=2.0, le=4.5, description="Sepal width in cm")
-    petal_length: float = Field(..., ge=1.0, le=7.0, description="Petal length in cm")
-    petal_width: float = Field(..., ge=0.1, le=2.5, description="Petal width in cm")
+    sepal_length: float = Field(..., ge=0.0, le=10.0, description="Sepal length in cm (0.0-10.0)")
+    sepal_width: float = Field(..., ge=0.0, le=6.0, description="Sepal width in cm (0.0-6.0)")
+    petal_length: float = Field(..., ge=0.0, le=10.0, description="Petal length in cm (0.0-10.0)")
+    petal_width: float = Field(..., ge=0.0, le=4.0, description="Petal width in cm (0.0-4.0)")
 
     class Config:
         """Pydantic config."""
@@ -93,3 +93,4 @@ class IrisTrainingRequest(BaseModel):
                 }
             }
         }
+

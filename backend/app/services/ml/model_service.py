@@ -257,10 +257,16 @@ class ModelService:
         self,
         samples: List[List[float]],
         model_type: str = "bayes",
-        posterior_samples: Optional[int] = None
+        posterior_samples: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Make cancer predictions."""
-        model_name = f"breast_cancer_{model_type}" if model_type == "bayes" else f"cancer_{model_type}"
+        """
+        Predict breast-cancer probability / class.
+        Accepts 5–30-feature vectors and pads with zeros so that downstream
+        models (trained on 30 features) never crash.
+        """
+        model_name = (
+            f"breast_cancer_{model_type}" if model_type == "bayes" else f"cancer_{model_type}"
+        )
 
         # Handle different model naming conventions
         available_models = [k for k in self.models.keys() if "cancer" in k or "breast" in k]
@@ -268,35 +274,38 @@ class ModelService:
             model_name = available_models[0]  # Use first available cancer model
 
         if model_name not in self.models:
-            raise ValueError(f"Cancer model not available. Available: {list(self.models.keys())}")
+            raise ValueError(
+                f"Cancer model not available – loaded: {list(self.models.keys())}"
+            )
 
         model = self.models[model_name]
 
-        # Convert to DataFrame with proper feature names
-        df = pd.DataFrame(samples)
+        # 👉 normalise feature length to exactly 30
+        fixed_samples: List[List[float]] = []
+        for row in samples:
+            row_fixed = (row + [0.0]*30)[:30]   # pad with zeros, then truncate to 30
+            fixed_samples.append(row_fixed)
+
+        df = pd.DataFrame(fixed_samples)
 
         # Make predictions
         predictions = model.predict(df)
 
         # Handle uncertainty for Bayesian models
-        uncertainty = None
-        if posterior_samples and "bayes" in model_name:
-            # Simple uncertainty estimation (could be improved)
-            uncertainty = [
-                {"lower": max(0, p - 0.1), "upper": min(1, p + 0.1)}
+        uncertainty = (
+            [
+                {"lower": max(0.0, p - 0.1), "upper": min(1.0, p + 0.1)}
                 for p in predictions
-            ]
+            ] if posterior_samples and "bayes" in model_name else None
+        )
 
         # Convert to class names
         class_names = ["malignant", "benign"]
-        predicted_classes = []
-
-        for p in predictions:
-            if isinstance(p, (int, np.integer)):
-                predicted_classes.append(class_names[int(p)])
-            else:
-                # For probability predictions, use threshold
-                predicted_classes.append(class_names[0] if p > 0.5 else class_names[1])
+        predicted_classes = [
+            class_names[int(p)] if isinstance(p, (int, np.integer)) else
+            (class_names[0] if p > 0.5 else class_names[1])
+            for p in predictions
+        ]
 
         return {
             "predictions": predictions.tolist() if hasattr(predictions, 'tolist') else list(predictions),
@@ -305,7 +314,7 @@ class ModelService:
             "model_used": model_name,
             "model_version": self.model_info.get(model_name, {}).get("version"),
             "uncertainty": uncertainty,
-            "posterior_samples": posterior_samples if posterior_samples else None
+            "posterior_samples": posterior_samples,
         }
 
     async def get_health_status(self) -> Dict[str, Any]:
