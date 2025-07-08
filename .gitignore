@@ -18,3 +18,4 @@ test_iris.json
 
 # Railway CLI (never commit tokens)
 .railway/config.json
+template/fastapi/.env.example

@@ -1,0 +1,99 @@
+Below is a quick summary, followed by detailed steps to resolve the “Found invalid RAILWAY\_TOKEN” error and successfully authenticate your Railway CLI.
+
+Railway CLI supports two kinds of tokens: **project tokens** (set via `RAILWAY_TOKEN`) and **account/team tokens** (set via `RAILWAY_API_TOKEN`) ([docs.railway.com][1]). If both are present, the CLI always prefers `RAILWAY_TOKEN`, so setting an account token in that variable will cause “invalid token” errors ([docs.railway.com][1]). You’ll need to **unset** any `RAILWAY_TOKEN` and only export your account token in `RAILWAY_API_TOKEN` to run commands like `railway whoami` ([github.com][2]).
+
+---
+
+## Understanding Railway Token Types
+
+Railway’s CLI distinguishes sharply between project-scoped and account-scoped tokens.
+
+* **Project Tokens** (via `RAILWAY_TOKEN`) grant only project-level actions (e.g., `railway up`, `railway logs`) ([docs.railway.com][1]).
+* **Account/Team Tokens** (via `RAILWAY_API_TOKEN`) allow account-wide operations (e.g., `railway whoami`, `railway init`) ([docs.railway.com][1]).
+* When both are set, `RAILWAY_TOKEN` takes precedence, so an invalid or mis-scoped project token will block even account-level commands ([docs.railway.com][1]).
+
+---
+
+## Why You’re Seeing “Invalid RAILWAY\_TOKEN”
+
+You set your account token into both `RAILWAY_API_TOKEN` **and** `RAILWAY_TOKEN`. Because the CLI sees `RAILWAY_TOKEN` first and treats it as a project token, it rejects it (“Unauthorized”) when you run `railway login` or `railway whoami` ([station.railway.com][3]).
+
+---
+
+## Step-by-Step Fix
+
+1. **Unset the invalid project token**
+   Remove `RAILWAY_TOKEN` from your session so the CLI can fall back to `RAILWAY_API_TOKEN` only:
+
+   ```powershell
+   Remove-Item Env:\RAILWAY_TOKEN
+   ```
+
+   ([docs.railway.com][1])
+
+2. **Export only your account token**
+   Set `RAILWAY_API_TOKEN` in PowerShell for the current session:
+
+   ```powershell
+   $env:RAILWAY_API_TOKEN = "API_KEY"
+   ```
+
+   ([docs.railway.com][1])
+
+3. *(Optional)* **Persist the token across sessions**
+   To make it permanent in PowerShell:
+
+   ```powershell
+   setx RAILWAY_API_TOKEN "API_KEY"
+   ```
+
+   ([docs.railway.com][4])
+
+4. **(Re)login or verify**
+   Now run:
+
+   ```bash
+   railway whoami
+   ```
+
+   It should print your Railway account identity instead of “Unauthorized” ([docs.railway.com][1]).
+
+5. **Headless environments**
+   If you need to authenticate without a browser (SSH/CI), you can pair manually:
+
+   ```bash
+   railway login --browserless
+   ```
+
+   ([fig.io][5])
+
+---
+
+## Verifying and Linking Your Project
+
+* After you’ve authenticated, **associate** your local directory with a Railway project:
+
+  ```bash
+  railway link
+  ```
+
+  ([stackoverflow.com][6])
+
+* Once linked, you’ll be able to run project commands:
+
+  ```bash
+  railway status
+  railway up
+  railway logs
+  ```
+
+  ([stackoverflow.com][6])
+
+By ensuring only the correct environment variable is set and then linking your project, your Railway CLI commands should work without the “invalid token” error.
+
+[1]: https://docs.railway.com/guides/cli?utm_source=chatgpt.com "Using the CLI | Railway Docs"
+[2]: https://github.com/railwayapp/cli/issues/105?utm_source=chatgpt.com "Ability to run all railway commands with RAILWAY_TOKEN #105"
+[3]: https://station.railway.com/questions/cant-use-railway-cli-found-invalid-ra-b6af8f40?utm_source=chatgpt.com "cant use railway CLI - on login \"Found invalid RAILWAY_TOKEN\""
+[4]: https://docs.railway.com/api/llms-docs.md?utm_source=chatgpt.com "https://docs.railway.com/api/llms-docs.md"
+[5]: https://fig.io/manual/railway/login?utm_source=chatgpt.com "railway login - Fig.io"
+[6]: https://stackoverflow.com/questions/79583273/railway-cli-deployment-in-github-actions-failing-with-project-token-not-found?utm_source=chatgpt.com "Railway CLI Deployment in GitHub Actions Failing with \"Project ..."
