@@ -1,3 +1,4 @@
+# Keep build context tiny when using .devcontainer as context (if ever)
 **/.git
 **/.vscode
 **/.idea
@@ -16,6 +17,5 @@ notebooks/**/*.ipynb_checkpoints
 .DS_Store
 Thumbs.db
 
-# --- NEW: keep build context tiny & readable ---
-mlruns/          # MLflow runs & artifacts (often huge, root-owned)
-mlruns/**        # ensure nested paths are ignored
+# MLflow runs & artifacts
+mlruns

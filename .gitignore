@@ -11,11 +11,11 @@ frontend/node_modules/
 
 archive/
 .venv
-/uv.lock  # Only ignore uv.lock in root directory
+uv.lock
 
 test_iris.json
 .env.template
 
 # Railway CLI (never commit tokens)
 .railway/config.json
-template/fastapi/.env.example
+archive/

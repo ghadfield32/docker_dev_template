@@ -24,22 +24,25 @@ services:
         condition: service_healthy
 
     gpus: all
+    init: true        # <—— IMPORTANT: provide a real PID 1 for stable exec
 
     environment:
-      - PYTHON_VER=${PYTHON_VER:-3.10}
+      - PYTHON_VER=${PYTHON_VER}
       - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display
-      - JAX_PLATFORM_NAME=${JAX_PLATFORM_NAME:-gpu}
-      - XLA_PYTHON_CLIENT_PREALLOCATE=${XLA_PYTHON_CLIENT_PREALLOCATE:-true}
-      - XLA_PYTHON_CLIENT_ALLOCATOR=${XLA_PYTHON_CLIENT_ALLOCATOR:-platform}
-      - XLA_PYTHON_CLIENT_MEM_FRACTION=${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.95}
-      - XLA_FLAGS=${XLA_FLAGS:---xla_force_host_platform_device_count=1}
-      - JAX_DISABLE_JIT=${JAX_DISABLE_JIT:-false}
-      - JAX_ENABLE_X64=${JAX_ENABLE_X64:-false}
-      - TF_FORCE_GPU_ALLOW_GROWTH=${TF_FORCE_GPU_ALLOW_GROWTH:-false}
-      - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOCATION_SIZE_LIMIT_BYTES:-8589934592}
-      - RAILWAY_TOKEN=${RAILWAY_TOKEN:-}
-      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility    # trim graphics/display
+      - JAX_PLATFORM_NAME=${JAX_PLATFORM_NAME}
+      - XLA_PYTHON_CLIENT_PREALLOCATE=${XLA_PYTHON_CLIENT_PREALLOCATE}
+      - XLA_PYTHON_CLIENT_ALLOCATOR=${XLA_PYTHON_CLIENT_ALLOCATOR}
+      - XLA_PYTHON_CLIENT_MEM_FRACTION=${XLA_PYTHON_CLIENT_MEM_FRACTION}
+      - XLA_FLAGS=${XLA_FLAGS}
+      - JAX_DISABLE_JIT=${JAX_DISABLE_JIT}
+      - JAX_ENABLE_X64=${JAX_ENABLE_X64}
+      - TF_FORCE_GPU_ALLOW_GROWTH=${TF_FORCE_GPU_ALLOW_GROWTH}
+      - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOCATION_SIZE_LIMIT_BYTES}
+      - GPU_TARGET=${GPU_TARGET:-auto}
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-jupyter}
+      - INSTALL_TF=${INSTALL_TF:-0}
+      - UV_PROJECT_ENVIRONMENT=/app/.venv     # 👈 new
 
     volumes:
       - .:/workspace
@@ -51,19 +54,31 @@ services:
       - "${HOST_TENSORBOARD_PORT:-}:6008"
       - "${HOST_EXPLAINER_PORT:-8050}:8050"
       - "${HOST_STREAMLIT_PORT:-}:8501"
-      - "${HOST_FRONTEND_DEV_PORT:-5173}:5173"  # Frontend development server
-      - "${HOST_BACKEND_DEV_PORT:-5002}:5000"   # Backend development server (host:5002 -> container:5000)
 
+    # 🔽 GPU setup and Jupyter startup
     command: >
-      jupyter lab
-        --ip=0.0.0.0
-        --port=8888
-        --allow-root
-        --NotebookApp.token="${JUPYTER_TOKEN:-jupyter}"
-        --NotebookApp.allow_origin='*'
+      bash -lc '
+        echo "[boot] starting GPU bootstrap" &&
+        if ! python -c "import torch" 2>/dev/null; then
+          echo "[boot] installing PyTorch (cu121)" &&
+          pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 &&
+          echo "[boot] PyTorch installed"
+        else
+          echo "[boot] PyTorch already present"
+        fi &&
+        if [ "$INSTALL_TF" = "1" ]; then
+          echo "[boot] installing TensorFlow" &&
+          pip install --no-cache-dir tensorflow
+        fi &&
+        echo "[boot] running GPU verification" &&
+        python -c "import sys; print('Python:', sys.version.split()[0]); import jax; print('JAX:', jax.__version__, 'devices:', jax.devices())" 2>/dev/null || echo "[boot] JAX not available" &&
+        python -c "import torch; print('Torch:', torch.__version__, 'cuda:', torch.cuda.is_available())" 2>/dev/null || echo "[boot] Torch not available" &&
+        echo "[boot] boot completed" &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token="${JUPYTER_TOKEN}" --NotebookApp.allow_origin="*"
+      '
 
     healthcheck:
-      test: ["CMD-SHELL", "bash --version && uv --help || exit 1"]
+      test: ["CMD-SHELL", "python - <<'PY'\nimport importlib,sys; sys.exit(0 if importlib.util.find_spec('jupyterlab') else 1)\nPY"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -74,56 +89,8 @@ services:
       - "com.docker.compose.service=datascience"
       - "description=AI/ML Development Environment with GPU Support"
 
-  # NFL Kicker Assessment App (Production Build Testing)
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend   # <-- points at your new Node Dockerfile
-    image: nfl-kicker-app:latest       # optional tag
-    command: ["node","server.js"]
-    working_dir: /app
-    environment:
-      - NODE_ENV=production
-    ports:
-      - "${HOST_APP_PORT:-5100}:5000"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/api/ping || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    restart: unless-stopped
-    labels:
-      - "description=NFL Kicker Assessment Application"
-
-  # NFL Kicker Model API Service
-  model-api:
-    build:
-      context: .
-      dockerfile: .devcontainer/Dockerfile
-    command: uvicorn src.backend.ML.model_api.main:app --host 0.0.0.0 --port 8000 --reload
-    environment:
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
-      - PYTHONPATH=/workspace
-    depends_on:
-      mlflow:
-        condition: service_healthy
-    ports:
-      - "${HOST_MODEL_API_PORT:-8000}:8000"
-    volumes:
-      - .:/workspace
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    labels:
-      - "description=NFL Kicker Model API Service"
-
   mlflow:
-    image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION:-latest}
+    image: ghcr.io/mlflow/mlflow:latest
     command: >
       mlflow server
       --host 0.0.0.0
@@ -136,11 +103,13 @@ services:
       - ./mlruns:/mlflow_artifacts    # artifacts + run metadata
       - ./mlflow_db:/mlflow_db        # SQLite backend store
     ports:
-      - "${HOST_MLFLOW_PORT:-5000}:5000"  # Keep MLflow on canonical port
+      - "${HOST_MLFLOW_PORT:-5000}:5000"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport sys,requests,os\nfor ep in ('/health','/api/2.0/mlflow/health'):\n  try:\n    r=requests.get('http://localhost:5000'+ep,timeout=2)\n    if r.ok:\n      sys.exit(0)\n  except Exception:\n    pass\nsys.exit(1)\nPY"]
+      test: ["CMD-SHELL",
+             "python - <<'PY'\nimport requests,sys; requests.get('http://localhost:5000/health').raise_for_status()\nPY"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 30s
+

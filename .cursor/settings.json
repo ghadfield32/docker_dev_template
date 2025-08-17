@@ -9,11 +9,5 @@
     "jupyter.experiments.enabled": false,
     "jupyter.telemetry.enabled": false,
     "python.telemetry.enabled": false,
-    "telemetry.telemetryLevel": "off",
-
-    // Line ending settings
-    "files.eol": "\n",
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "files.trimTrailingWhitespace": true
-}
+    "telemetry.telemetryLevel": "off"
+} 

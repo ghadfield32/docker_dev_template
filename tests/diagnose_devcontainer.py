@@ -57,7 +57,7 @@ def check_key_packages():
     print("=" * 60)
 
     packages = [
-        'jax', 'torch', 'numpy', 'pandas', 'matplotlib',
+        'jax', 'torch', 'numpy', 'pandas', 'matplotlib', 
         'jupyterlab', 'streamlit', 'sklearn'
     ]
 
@@ -83,7 +83,7 @@ def check_gpu_environment():
 
     gpu_env_vars = [
         'XLA_PYTHON_CLIENT_PREALLOCATE',
-        'XLA_PYTHON_CLIENT_ALLOCATOR',
+        'XLA_PYTHON_CLIENT_ALLOCATOR', 
         'XLA_PYTHON_CLIENT_MEM_FRACTION',
         'JAX_PLATFORM_NAME',
         'XLA_FLAGS',
@@ -252,4 +252,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 

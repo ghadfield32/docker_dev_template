@@ -54,4 +54,4 @@ if __name__ == "__main__":
         # Not exiting with error to allow container to start anyway
         # sys.exit(1)
     else:
-        sys.exit(0)
+        sys.exit(0) 

@@ -46,4 +46,4 @@ except ImportError:
     sys.exit(1)
 except Exception as e:
     print(f"Error during PyJAGS verification: {e}")
-    sys.exit(1)
+    sys.exit(1) 

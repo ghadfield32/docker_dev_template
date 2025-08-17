@@ -4,11 +4,7 @@
   "service": "datascience",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "initializeCommand": ".devcontainer/generate-project-name.sh",
-  "runArgs": [
-    "--gpus", "all",
-    "--env-file", "${localWorkspaceFolder}/.devcontainer/.env.runtime"
-  ],
+  "runArgs": ["--gpus", "all"],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -36,27 +32,29 @@
         },
 
         // 3. PYTHON AND JUPYTER SETTINGS
-        "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",   // 👈 changed
         "jupyter.interactiveWindow.textEditor.executeSelection": true,
-        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"],
-
-        // 4. LINE ENDING SETTINGS
-        "files.eol": "\n",
-        "files.insertFinalNewline": true,
-        "files.trimFinalNewlines": true,
-        "files.trimTrailingWhitespace": true
+        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"]
       }
     }
   },
   "remoteEnv": {
-    "JUPYTER_ENABLE_LAB": "true"
+    "JUPYTER_ENABLE_LAB": "true",
+    "UV_PROJECT_ENVIRONMENT": "/app/.venv"                          // 👈 new
   },
-  "remoteUser": "root",
 
   // After container creation, set up env, check UV, Python, and key libs
   "postCreateCommand": [
-    "/bin/bash",
+    "/bin/sh",
     "-c",
-    "find /workspace -type f \\( -name '*.sh' -o -name '*.py' \\) -exec dos2unix {} \\; 2>/dev/null || true && find /workspace -type f -name '*.sh' -exec chmod +x {} \\; && .devcontainer/setup_env.sh && echo '## uv diagnostics ##' && uv --version && echo '## python ##' && which python && python -V && python - <<'PY'\nimport encodings, jupyterlab, torch, jax, sys, os\nprint('🟢 encodings OK', sys.executable)\nprint('🟢 jupyterlab OK')\nprint('🟢 torch', torch.__version__, 'CUDA:', torch.cuda.is_available())\nprint('🟢 jax', jax.__version__, 'devices:', jax.devices())\nPY"
+    ".devcontainer/setup_env.sh && \
+    echo '## uv diagnostics ##' && uv --version && \
+    echo '## python ##' && which python && python -V && \
+    python .devcontainer/verify_env.py"
+  ],
+  "postStartCommand": [
+    "/bin/sh",
+    "-c",
+    "echo '## uv sync on start ##' && (uv sync --frozen || uv sync) && python .devcontainer/verify_env.py"
   ]
 }

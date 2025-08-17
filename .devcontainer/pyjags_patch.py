@@ -26,4 +26,4 @@ def patch_pyjags_sources():
     return 0
 
 if __name__ == "__main__":
-    sys.exit(patch_pyjags_sources())
+    sys.exit(patch_pyjags_sources()) 
