@@ -86,9 +86,3 @@ RUN mkdir -p /root/.ipython/profile_default/startup && \
 RUN echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
 
 CMD ["bash"]
-
-
-
-
-
-
