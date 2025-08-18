@@ -1,10 +1,10 @@
 {
   "name": "docker_dev_template_uv",
-  "dockerComposeFile": ["../docker-compose.yml"],
+  "dockerComposeFile": ["docker-compose.yml"],
   "service": "datascience",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
-  "runArgs": ["--gpus", "all"],
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -14,7 +14,6 @@
         "ms-toolsai.jupyter-renderers"
       ],
       "settings": {
-        // 1. COMPREHENSIVE TELEMETRY SETTINGS
         "telemetry.telemetryLevel": "off",
         "python.telemetry.enabled": false,
         "jupyter.telemetry.enabled": false,
@@ -22,39 +21,48 @@
         "update.mode": "manual",
         "extensions.autoUpdate": false,
         "extensions.autoCheckUpdates": false,
-
-        // 2. MOVE HEAVY EXTENSIONS TO LOCAL UI HOST
         "remote.extensionKind": {
           "ms-python.python": ["ui"],
           "ms-python.vscode-pylance": ["ui"],
           "ms-toolsai.jupyter": ["ui"],
           "ms-toolsai.jupyter-renderers": ["ui"]
         },
-
-        // 3. PYTHON AND JUPYTER SETTINGS
-        "python.defaultInterpreterPath": "/app/.venv/bin/python",   // 👈 changed
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
         "jupyter.interactiveWindow.textEditor.executeSelection": true,
         "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"]
       }
     }
   },
+
   "remoteEnv": {
     "JUPYTER_ENABLE_LAB": "true",
-    "UV_PROJECT_ENVIRONMENT": "/app/.venv"                          // 👈 new
+    "UV_PROJECT_ENVIRONMENT": "/app/.venv"
   },
 
-  // After container creation, set up env, check UV, Python, and key libs
   "postCreateCommand": [
     "/bin/sh",
     "-c",
-    ".devcontainer/setup_env.sh && \
-    echo '## uv diagnostics ##' && uv --version && \
-    echo '## python ##' && which python && python -V && \
-    python .devcontainer/verify_env.py"
+    "set -eux; \
+    echo '## postCreate: uv bootstrap ##'; \
+    PROJECT_DIR=/workspace; \
+    DEV_DIR=/workspace/.devcontainer; \
+    TARGET_DIR=$([ -f \"$PROJECT_DIR/pyproject.toml\" ] && echo \"$PROJECT_DIR\" || echo \"$DEV_DIR\"); \
+    cd \"$TARGET_DIR\"; \
+    uv --version; \
+    (uv sync --frozen || uv sync); \
+    cd \"$PROJECT_DIR\"; \
+    python - <<'PY'\nimport sys, subprocess\nprint('[postCreate] Ensuring ipykernel present for', sys.executable)\ntry:\n    import ipykernel  # noqa\nexcept Exception:\n    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'ipykernel'])\nsubprocess.check_call([sys.executable, '-m', 'ipykernel', 'install', '--name', 'uv-app-venv', '--display-name', 'Python (uv /app/.venv)', '--user'])\nprint('[postCreate] ipykernel installed/updated as uv-app-venv')\nPY\n \
+    echo '[postCreate] Installing PyJAGS (post-sync)'; \
+    CPPFLAGS='-include cstdint' uv pip install --no-build-isolation pyjags==1.3.8 || true; \
+    python /workspace/.devcontainer/verify_env.py"
   ],
+
   "postStartCommand": [
     "/bin/sh",
     "-c",
-    "echo '## uv sync on start ##' && (uv sync --frozen || uv sync) && python .devcontainer/verify_env.py"
+    "set -eux; \
+    /workspace/.devcontainer/gpu_bootstrap.sh; \
+    echo \"[postStart] PWD=$(pwd)\"; \
+    python .devcontainer/verify_env.py"
   ]
 }

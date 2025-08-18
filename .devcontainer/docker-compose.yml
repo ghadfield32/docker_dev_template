@@ -1,12 +1,13 @@
-# docker-compose.yml
+# .devcontainer/docker-compose.yml
 name: ${ENV_NAME:-docker_dev_template}
 
 services:
   datascience:
     build:
       context: .
-      dockerfile: .devcontainer/Dockerfile
+      dockerfile: Dockerfile
       args:
+        CUDA_TAG: ${CUDA_TAG:-12.8.0}
         PYTHON_VER: ${PYTHON_VER:-3.10}
         ENV_NAME: ${ENV_NAME:-docker_dev_template}
         JAX_PREALLOCATE: ${XLA_PYTHON_CLIENT_PREALLOCATE:-true}
@@ -14,23 +15,18 @@ services:
         JAX_ALLOCATOR: ${XLA_PYTHON_CLIENT_ALLOCATOR:-platform}
         JAX_PREALLOC_LIMIT: ${JAX_PREALLOCATION_SIZE_LIMIT_BYTES:-8589934592}
 
-    # (Removed explicit container_name to avoid "already in use" conflicts.)
-
-    # Enhanced restart policy to handle port conflicts
     restart: unless-stopped
-
     depends_on:
       mlflow:
         condition: service_healthy
 
     gpus: all
-    init: true        # <—— IMPORTANT: provide a real PID 1 for stable exec
+    init: true
 
     environment:
       - PYTHON_VER=${PYTHON_VER}
       - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility    # trim graphics/display
-      - JAX_PLATFORM_NAME=${JAX_PLATFORM_NAME}
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - XLA_PYTHON_CLIENT_PREALLOCATE=${XLA_PYTHON_CLIENT_PREALLOCATE}
       - XLA_PYTHON_CLIENT_ALLOCATOR=${XLA_PYTHON_CLIENT_ALLOCATOR}
       - XLA_PYTHON_CLIENT_MEM_FRACTION=${XLA_PYTHON_CLIENT_MEM_FRACTION}
@@ -39,55 +35,37 @@ services:
       - JAX_ENABLE_X64=${JAX_ENABLE_X64}
       - TF_FORCE_GPU_ALLOW_GROWTH=${TF_FORCE_GPU_ALLOW_GROWTH}
       - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOCATION_SIZE_LIMIT_BYTES}
-      - GPU_TARGET=${GPU_TARGET:-auto}
       - JUPYTER_TOKEN=${JUPYTER_TOKEN:-jupyter}
       - INSTALL_TF=${INSTALL_TF:-0}
-      - UV_PROJECT_ENVIRONMENT=/app/.venv     # 👈 new
+      - UV_PROJECT_ENVIRONMENT=/app/.venv
 
     volumes:
-      - .:/workspace
-      - ./mlruns:/workspace/mlruns        # new
+      - ..:/workspace
+      - ../mlruns:/workspace/mlruns
 
     ports:
-      # Enhanced port configuration with fallback options
       - "${HOST_JUPYTER_PORT:-8890}:8888"
       - "${HOST_TENSORBOARD_PORT:-}:6008"
       - "${HOST_EXPLAINER_PORT:-8050}:8050"
       - "${HOST_STREAMLIT_PORT:-}:8501"
 
-    # 🔽 GPU setup and Jupyter startup
+    # Start Jupyter only; framework installs are handled by postStart gpu_bootstrap.sh
     command: >
       bash -lc '
-        echo "[boot] starting GPU bootstrap" &&
-        if ! python -c "import torch" 2>/dev/null; then
-          echo "[boot] installing PyTorch (cu121)" &&
-          pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 &&
-          echo "[boot] PyTorch installed"
-        else
-          echo "[boot] PyTorch already present"
-        fi &&
-        if [ "$INSTALL_TF" = "1" ]; then
-          echo "[boot] installing TensorFlow" &&
-          pip install --no-cache-dir tensorflow
-        fi &&
-        echo "[boot] running GPU verification" &&
-        python -c "import sys; print('Python:', sys.version.split()[0]); import jax; print('JAX:', jax.__version__, 'devices:', jax.devices())" 2>/dev/null || echo "[boot] JAX not available" &&
-        python -c "import torch; print('Torch:', torch.__version__, 'cuda:', torch.cuda.is_available())" 2>/dev/null || echo "[boot] Torch not available" &&
-        echo "[boot] boot completed" &&
+        echo "[boot] starting jupyter lab";
         jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token="${JUPYTER_TOKEN}" --NotebookApp.allow_origin="*"
       '
 
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport importlib,sys; sys.exit(0 if importlib.util.find_spec('jupyterlab') else 1)\nPY"]
+      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, pkgutil\nsys.exit(0 if pkgutil.find_loader('jupyterlab') else 1)\nPY"]
       interval: 30s
       timeout: 5s
       retries: 3
 
-    # Enhanced labels for better debugging
     labels:
       - "com.docker.compose.project=${ENV_NAME:-docker_dev_template}"
       - "com.docker.compose.service=datascience"
-      - "description=AI/ML Development Environment with GPU Support"
+      - "description=AI/ML Dev Env (GPU)"
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -100,14 +78,13 @@ services:
     environment:
       MLFLOW_EXPERIMENTS_DEFAULT_ARTIFACT_LOCATION: /mlflow_artifacts
     volumes:
-      - ./mlruns:/mlflow_artifacts    # artifacts + run metadata
-      - ./mlflow_db:/mlflow_db        # SQLite backend store
+      - ../mlruns:/mlflow_artifacts
+      - ../mlflow_db:/mlflow_db
     ports:
       - "${HOST_MLFLOW_PORT:-5000}:5000"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL",
-             "python - <<'PY'\nimport requests,sys; requests.get('http://localhost:5000/health').raise_for_status()\nPY"]
+      test: ["CMD-SHELL", "python - <<'PY'\nimport requests,sys; requests.get('http://localhost:5000/health').raise_for_status()\nPY"]
       interval: 10s
       timeout: 3s
       retries: 5
