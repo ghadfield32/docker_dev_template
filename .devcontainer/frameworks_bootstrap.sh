@@ -29,10 +29,10 @@ install_kernel() {
   "$venv/bin/python" -m ipykernel install --name "$name" --display-name "$label" --user
 }
 
-# --- JAX (CUDA12 via PJRT plugin) ---
+# --- JAX (CUDA12 via local plugin) ---
 create_env "$JAX_ENV"
 $UV pip --python "$JAX_ENV/bin/python" install --no-cache-dir \
-  "jax[cuda12]==0.6.0" \
+  "jax[cuda12-local]==0.6.0" \
   -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 install_kernel "$JAX_ENV" "jax-cu12" "Python (JAX CUDA12)"
 

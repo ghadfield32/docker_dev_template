@@ -1,0 +1,201 @@
+# ['personId', 'player_name', 'season', 'games_played', 'total_minutes', 'season_pie', 'ts_pct', 'pts_per36', 'ast_per36', 'reb_per36', 'total_points', 'total_assists', 'total_rebounds', 'total_steals', 'total_blocks', 'total_turnovers', 'total_fgm', 'total_fga', 'total_ftm', 'total_fta', 'total_3pm', 'total_3pa', 'height', 'bodyWeight', 'draftYear', 'fg_pct', 'fg3_pct', 'ft_pct', 'usage_per_min', 'efficiency_per_game', 'season_start_year', 'years_experience', 'experience_bucket', 'games_played_total', 'bmi', 'size_category', 'ts_attempts', 'three_point_rate', 'ft_rate', 'ast_to_tov', 'pts_per_shot', 'defensive_per36', 'production_per36', 'total_usage', 'shot_creation', 'shot_creation_per36', 'minutes_per_game', 'games_pct', 'minutes_tier', 'total_minutes_tier', 'fg_vs_league', 'fg3_vs_league', 'ft_vs_league', 'shooting_score', 'offensive_impact', 'two_way_impact', 'efficiency_volume_score', 'versatility_score', 'season_pie_rollmean_3', 'season_pie_trend_3', 'ts_pct_rollmean_3', 'ts_pct_trend_3', 'pts_per36_rollmean_3', 'pts_per36_trend_3', 'ast_per36_rollmean_3', 'ast_per36_trend_3', 'efficiency_per_game_rollmean_3', 'efficiency_per_game_trend_3']
+
+id:
+  - personId
+  - player_name
+  - season
+
+ordinal:
+  - draftYear  # Years have natural ordering
+  - season_start_year
+  - years_experience
+  - experience_bucket
+  - minutes_tier
+  - total_minutes_tier
+  - size_category
+
+nominal:
+  # Add categorical features here when available (e.g., team_name, position, etc.)
+
+numerical:
+  # Basic game stats
+  - games_played
+  - games_played_total
+  - total_minutes
+  - minutes_per_game
+  - games_pct
+  
+  # Scoring stats
+  - total_points
+  - pts_per36
+  - total_fgm
+  - total_fga
+  - total_ftm
+  - total_fta
+  - total_3pm
+  - total_3pa
+  - fg_pct
+  - fg3_pct
+  - ft_pct
+  - pts_per_shot
+  - shot_creation
+  - shot_creation_per36
+  
+  # Playmaking and ball handling
+  - total_assists
+  - ast_per36
+  - total_turnovers
+  - ast_to_tov
+  
+  # Rebounding
+  - total_rebounds
+  - reb_per36
+  
+  # Defense
+  - total_steals
+  - total_blocks
+  - defensive_per36
+  
+  # Physical attributes
+  - height
+  - bodyWeight
+  - bmi
+  
+  # Advanced efficiency metrics
+  - season_pie
+  - ts_pct
+  - ts_attempts
+  - three_point_rate
+  - ft_rate
+  - usage_per_min
+  - total_usage
+  - efficiency_per_game
+  - production_per36
+  
+  # Comparative metrics (vs league)
+  - fg_vs_league
+  - fg3_vs_league
+  - ft_vs_league
+  
+  # Composite scores
+  - shooting_score
+  - offensive_impact
+  - two_way_impact
+  - efficiency_volume_score
+  - versatility_score
+  
+  # Temporal/trend features - PIE
+  - season_pie_rollmean_3
+  - season_pie_trend_3
+  
+  # Temporal/trend features - True Shooting
+  - ts_pct_rollmean_3
+  - ts_pct_trend_3
+  
+  # Temporal/trend features - Points per 36
+  - pts_per36_rollmean_3
+  - pts_per36_trend_3
+  
+  # Temporal/trend features - Assists per 36
+  - ast_per36_rollmean_3
+  - ast_per36_trend_3
+  
+  # Temporal/trend features - Efficiency
+  - efficiency_per_game_rollmean_3
+  - efficiency_per_game_trend_3
+
+target:
+  - PIE
+
+# Numerical categories organized by basketball context and analysis needs
+numerical_categories:
+  # Basic playing time and availability
+  general:
+    - games_played
+    - games_played_total
+    - total_minutes
+    - minutes_per_game
+    - games_pct
+  
+  # All scoring-related statistics
+  scoring:
+    - total_points
+    - pts_per36
+    - total_fgm
+    - total_fga
+    - total_ftm
+    - total_fta
+    - total_3pm
+    - total_3pa
+    - fg_pct
+    - fg3_pct
+    - ft_pct
+    - pts_per_shot
+    - shot_creation
+    - shot_creation_per36
+  
+  # Advanced shooting and efficiency metrics
+  advanced:
+    - season_pie
+    - ts_pct
+    - ts_attempts
+    - three_point_rate
+    - ft_rate
+    - efficiency_per_game
+    - production_per36
+  
+  # Passing and ball-handling
+  playmaking:
+    - total_assists
+    - ast_per36
+    - total_turnovers
+    - ast_to_tov
+  
+  # Rebounding statistics
+  rebounding:
+    - total_rebounds
+    - reb_per36
+  
+  # Defensive statistics
+  defense:
+    - total_steals
+    - total_blocks
+    - defensive_per36
+  
+  # Usage and involvement metrics
+  usage:
+    - usage_per_min
+    - total_usage
+  
+  # Physical measurables
+  physical:
+    - height
+    - bodyWeight
+    - bmi
+  
+  # League comparison metrics
+  comparative:
+    - fg_vs_league
+    - fg3_vs_league
+    - ft_vs_league
+  
+  # Composite/derived scores
+  composite_scores:
+    - shooting_score
+    - offensive_impact
+    - two_way_impact
+    - efficiency_volume_score
+    - versatility_score
+  
+  # Rolling averages and trends for key metrics
+  temporal_metrics:
+    - season_pie_rollmean_3
+    - season_pie_trend_3
+    - ts_pct_rollmean_3
+    - ts_pct_trend_3
+    - pts_per36_rollmean_3
+    - pts_per36_trend_3
+    - ast_per36_rollmean_3
+    - ast_per36_trend_3
+    - efficiency_per_game_rollmean_3
+    - efficiency_per_game_trend_3

@@ -1,0 +1,19 @@
+section,subsection,field,value,extra
+completeness,_overall,required_columns,,"[""personId""]"
+completeness,personId,nonnull_ratio,1.0,null
+duplicates,_overall,has_duplicates,False,"{""duplicate_row_count"": 0, ""sample_rows"": []}"
+minmax,personId,count,6533,null
+minmax,personId,max,1966938209,null
+minmax,personId,mean,43521718.8319302,null
+minmax,personId,min,2,null
+minmax,personId,std,275161395.57676405,null
+nulls,firstName,null_count,1,"{""total_rows"": 6533, ""null_pct"": 0.00015306903413439462}"
+nulls,lastName,null_count,2,"{""total_rows"": 6533, ""null_pct"": 0.00030613806826878924}"
+nulls,personId,null_count,0,"{""total_rows"": 6533, ""null_pct"": 0.0}"
+outliers,_samples,sample_rows,,"[{""personId"": 500032, ""firstName"": ""Wesley"", ""lastName"": ""Matthews""}, {""personId"": 600001, ""firstName"": ""Nate"", ""lastName"": ""Thurmond""}, {""personId"": 600003, ""firstName"": ""Bob"", ""lastName"": ""Cousy""}, {""personId"": 600005, ""firstName"": ""Bob"", ""lastName"": ""Lanier""}, {""personId"": 600006, ""firstName"": ""Earl"", ""lastName"": ""Monroe""}]"
+outliers,personId,outlier_count,1558,"{""pct"": 0.2384815551813868, ""lower_fence"": -165832.5, ""upper_fence"": 425843.5}"
+uniqueness,_overall,duplicate_key_row_count,0,null
+uniqueness,_overall,has_violations,False,null
+uniqueness,_overall,primary_key_columns,,"[""personId""]"
+validity,_overall,details,,"{""errors"": []}"
+validity,_overall,status,passed,null

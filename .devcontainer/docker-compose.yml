@@ -10,57 +10,99 @@ services:
         CUDA_TAG: ${CUDA_TAG:-12.8.0}
         PYTHON_VER: ${PYTHON_VER:-3.10}
         ENV_NAME: ${ENV_NAME:-docker_dev_template}
-        JAX_PREALLOCATE: ${XLA_PYTHON_CLIENT_PREALLOCATE:-true}
-        JAX_MEM_FRAC: ${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.95}
-        JAX_ALLOCATOR: ${XLA_PYTHON_CLIENT_ALLOCATOR:-platform}
-        JAX_PREALLOC_LIMIT: ${JAX_PREALLOCATION_SIZE_LIMIT_BYTES:-8589934592}
 
     restart: unless-stopped
     depends_on:
       mlflow:
         condition: service_healthy
 
-    gpus: all
+    # GPU configuration - use proper syntax
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
     init: true
 
+    # RTX 5080 optimized runtime configuration
+    gpus: all
+    shm_size: 8g
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
     environment:
-      - PYTHON_VER=${PYTHON_VER}
+      # Core configuration
+      - PYTHON_VER=${PYTHON_VER:-3.10}
+      - UV_PROJECT_ENVIRONMENT=/app/.venv
+      - INSTALL_TF=${INSTALL_TF:-0}
+
+      # Critical: jemalloc memory management
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+
+      # GPU Environment
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - XLA_PYTHON_CLIENT_PREALLOCATE=${XLA_PYTHON_CLIENT_PREALLOCATE}
-      - XLA_PYTHON_CLIENT_ALLOCATOR=${XLA_PYTHON_CLIENT_ALLOCATOR}
-      - XLA_PYTHON_CLIENT_MEM_FRACTION=${XLA_PYTHON_CLIENT_MEM_FRACTION}
-      - XLA_FLAGS=${XLA_FLAGS}
-      - JAX_DISABLE_JIT=${JAX_DISABLE_JIT}
-      - JAX_ENABLE_X64=${JAX_ENABLE_X64}
-      - TF_FORCE_GPU_ALLOW_GROWTH=${TF_FORCE_GPU_ALLOW_GROWTH}
-      - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=${JAX_PREALLOCATION_SIZE_LIMIT_BYTES}
+      - CUDA_VISIBLE_DEVICES=0
+      - LD_LIBRARY_PATH=/app/.venv/lib:/usr/local/cuda/lib64
+
+      # JAX Configuration (RTX 5080 optimized) - REMOVED JAX_PLATFORM_NAME forcing
+      - XLA_PYTHON_CLIENT_PREALLOCATE=false
+      - XLA_PYTHON_CLIENT_ALLOCATOR=platform
+      - XLA_PYTHON_CLIENT_MEM_FRACTION=0.25
+      - XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda
+      - JAX_DISABLE_JIT=false
+      - JAX_ENABLE_X64=false
+      - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=8589934592
+
+      # PyTorch Configuration (RTX 5080 optimized)
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:True
+      - TORCH_CUDNN_V8_API_ENABLED=1
+
+      # TensorFlow Configuration (RTX 5080 optimized) - REMOVED
+      # - TF_GPU_ALLOCATOR=cuda_malloc_async
+      # - TF_FORCE_GPU_ALLOW_GROWTH=true
+
+          # Additional memory management for RTX 5080
+      - MALLOC_ARENA_MAX=1
+      - MALLOC_MMAP_THRESHOLD_=131072
+      - MALLOC_TCACHE_MAX=0
+      - MALLOC_MMAP_MAX=0
+      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
+
+      # Jupyter
       - JUPYTER_TOKEN=${JUPYTER_TOKEN:-jupyter}
-      - INSTALL_TF=${INSTALL_TF:-0}
-      - UV_PROJECT_ENVIRONMENT=/app/.venv
 
     volumes:
-      - ..:/workspace
+      - ..:/workspace:delegated
       - ../mlruns:/workspace/mlruns
 
     ports:
       - "${HOST_JUPYTER_PORT:-8890}:8888"
-      - "${HOST_TENSORBOARD_PORT:-}:6008"
+      - "${HOST_TENSORBOARD_PORT:-6008}:6008"
       - "${HOST_EXPLAINER_PORT:-8050}:8050"
-      - "${HOST_STREAMLIT_PORT:-}:8501"
+      - "${HOST_STREAMLIT_PORT:-8501}:8501"
 
-    # Start Jupyter only; framework installs are handled by postStart gpu_bootstrap.sh
     command: >
       bash -lc '
-        echo "[boot] starting jupyter lab";
-        jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token="${JUPYTER_TOKEN}" --NotebookApp.allow_origin="*"
+        echo "[boot] Activating environment...";
+        source /app/.venv/bin/activate;
+        echo "[boot] Starting Jupyter Lab...";
+        jupyter lab --ip=0.0.0.0 --port=8888 --allow-root 
+        --NotebookApp.token="${JUPYTER_TOKEN}" 
+        --NotebookApp.allow_origin="*" 
+        --NotebookApp.open_browser=false
       '
 
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport sys, pkgutil\nsys.exit(0 if pkgutil.find_loader('jupyterlab') else 1)\nPY"]
+      test: ["CMD-SHELL", "python -c 'import jupyterlab' 2>/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 60s
 
     labels:
       - "com.docker.compose.project=${ENV_NAME:-docker_dev_template}"
@@ -84,9 +126,8 @@ services:
       - "${HOST_MLFLOW_PORT:-5000}:5000"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport requests,sys; requests.get('http://localhost:5000/health').raise_for_status()\nPY"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health').raise_for_status()"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 30s
-

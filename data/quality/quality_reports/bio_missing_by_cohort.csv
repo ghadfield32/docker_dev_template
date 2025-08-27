@@ -1,0 +1,6 @@
+cohort,rows,null_height,null_bodyWeight,null_draftYear,pct_null_height,pct_null_bodyWeight,pct_null_draftYear
+1980-1999,146,0.0,0.0,0.0,0.0,0.0,0.0
+2000-2015,2185,15.0,10.0,0.0,0.7,0.5,0.0
+2016+,357,0.0,0.0,0.0,0.0,0.0,0.0
+pre-1980,423,7.0,7.0,0.0,1.7,1.7,0.0
+unknown,2137,2137.0,2137.0,2137.0,100.0,100.0,100.0
