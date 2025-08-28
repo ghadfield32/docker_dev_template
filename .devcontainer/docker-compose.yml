@@ -4,8 +4,8 @@ name: ${ENV_NAME:-docker_dev_template}
 services:
   datascience:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
       args:
         CUDA_TAG: ${CUDA_TAG:-12.8.0}
         PYTHON_VER: ${PYTHON_VER:-3.10}

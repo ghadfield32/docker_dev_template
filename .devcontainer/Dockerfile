@@ -63,13 +63,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 RUN ln -sf $(find /usr/local -name "cuda-*" -type d | head -n1) /usr/local/cuda || \
     ln -sf /usr/local/cuda /usr/local/cuda
 
-# Copy project files for dependency installation
-COPY pyproject.toml /workspace/.devcontainer/
-COPY uv.lock* /workspace/.devcontainer/
+# Copy project files for dependency installation (from repo root)
+COPY pyproject.toml /workspace/
+COPY uv.lock* /workspace/
 
 # Install project dependencies with better error handling
 RUN --mount=type=cache,target=/root/.cache/uv \
-    cd /workspace/.devcontainer && \
+    cd /workspace && \
     (uv sync --frozen --no-dev || (echo "🔁 Lock out-of-date; refreshing…" && uv sync --no-dev && uv lock))
 
 # Essential CUDA libraries path
@@ -84,3 +84,4 @@ RUN echo 'cd /workspace' > /etc/profile.d/99-workspace-cd.sh && \
     echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
 
 CMD ["bash"]
+

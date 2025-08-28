@@ -49,17 +49,9 @@ uv pip install -U "jax[cuda12]"
 echo "   ✅ JAX installation completed"
 echo ""
 
-# --- Step 3: TensorFlow Repair ---
-echo "🔢 Step 3: Repairing TensorFlow..."
-echo "   Removing existing TensorFlow installations..."
-
-# Remove all TensorFlow-related packages
-uv pip uninstall -y tensorflow tensorboard keras || true
-
-echo "   Installing TensorFlow nightly for RTX 5080 support..."
-uv pip install -U --pre tf-nightly tb-nightly keras-nightly
-
-echo "   ✅ TensorFlow installation completed"
+# --- Step 3: TensorFlow removed for efficiency ---
+echo "🔢 Step 3: TensorFlow removed for efficiency..."
+echo "   TensorFlow installation skipped to improve build speed and reduce conflicts"
 echo ""
 
 # --- Step 4: Verification ---
@@ -92,22 +84,8 @@ try:
 except Exception as e:
     print(f"❌ JAX verification failed: {e}")
 
-# Check TensorFlow
-try:
-    import tensorflow as tf
-    print(f"✅ TensorFlow: {tf.__version__}")
-
-    # Check GPU devices
-    try:
-        gpus = tf.config.list_physical_devices("GPU")
-        print(f"✅ TensorFlow GPU devices: {len(gpus)} found")
-        for gpu in gpus:
-            print(f"   - {gpu}")
-    except Exception as e:
-        print(f"❌ TensorFlow GPU check failed: {e}")
-
-except Exception as e:
-    print(f"❌ TensorFlow verification failed: {e}")
+# TensorFlow removed for efficiency
+print("✅ TensorFlow: removed for efficiency")
 
 # Check PyTorch
 try:

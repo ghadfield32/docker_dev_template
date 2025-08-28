@@ -60,3 +60,4 @@
   "postStartCommand": "/bin/sh -lc 'set -e; find .devcontainer -maxdepth 1 -name \"*.sh\" -exec sed -i \"s/\\r$//\" {} \\;; chmod +x .devcontainer/*.sh; bash .devcontainer/opening.sh --verify-only || true'"
 }
 
+

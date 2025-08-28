@@ -27,13 +27,13 @@ cd /workspace
 # Check if dependencies need to be installed
 if ! python -c "import pymc" 2>/dev/null; then
     log "📦 Installing project dependencies..."
-
-    # Try to sync from workspace first, then fallback to .devcontainer
+    
+    # Prefer root pyproject.toml for universal local+container dev
     if [ -f "pyproject.toml" ]; then
         log "Using workspace pyproject.toml"
         uv sync --frozen || uv sync
     elif [ -f ".devcontainer/pyproject.toml" ]; then
-        log "Using .devcontainer/pyproject.toml"
+        log "Using .devcontainer/pyproject.toml (fallback)"
         cd .devcontainer
         uv sync --frozen || uv sync
         cd ..

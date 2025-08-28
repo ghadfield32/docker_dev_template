@@ -181,25 +181,8 @@ else
     status_error "JAX not installed"
 fi
 
-# Check TensorFlow
-if python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')" 2>/dev/null; then
-    TF_VERSION=$(python -c "import tensorflow as tf; print(tf.__version__)" 2>/dev/null)
-    status_ok "TensorFlow installed: $TF_VERSION"
-
-    # Check GPU support
-    if python -c "import tensorflow as tf; print('GPU available:', len(tf.config.list_physical_devices('GPU')) > 0)" 2>/dev/null; then
-        TF_GPU_AVAILABLE=$(python -c "import tensorflow as tf; print(len(tf.config.list_physical_devices('GPU')) > 0)" 2>/dev/null)
-        if [ "$TF_GPU_AVAILABLE" = "True" ]; then
-            status_ok "TensorFlow GPU support: Available"
-            TF_GPU_COUNT=$(python -c "import tensorflow as tf; print(len(tf.config.list_physical_devices('GPU')))" 2>/dev/null)
-            status_info "TensorFlow GPU devices: $TF_GPU_COUNT"
-        else
-            status_warn "TensorFlow GPU support: Not available"
-        fi
-    fi
-else
-    status_warn "TensorFlow not installed"
-fi
+# TensorFlow removed for efficiency
+status_info "TensorFlow: Removed for efficiency (PyTorch + JAX only)"
 
 # Phase 4: Package Manager Status
 section "Package Manager Status"

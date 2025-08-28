@@ -61,12 +61,8 @@ uv pip uninstall -y jax jaxlib jax-cuda12-plugin jax-cuda12-pjrt || true
 # Install JAX with proper CUDA 12 support
 uv pip install -U "jax[cuda12]"
 
-# ---- TensorFlow ----
-echo "[postCreate] Installing TensorFlow nightly for RTX 5080 compute capability 12.0 support..."
-# Remove any existing TensorFlow installations
-uv pip uninstall -y tensorflow tensorboard keras || true
-# Install TensorFlow nightly for RTX 5080 support
-uv pip install -U --pre tf-nightly tb-nightly keras-nightly
+# ---- TensorFlow removed for efficiency ----
+echo "[postCreate] TensorFlow installation skipped (removed for efficiency)"
 
 # ---- Quick version check ----
 python - <<'PY'
@@ -78,9 +74,8 @@ except Exception as e: print("torch import failed:", e)
 try:
     import jax, jaxlib; print("jax:", jax.__version__, "jaxlib:", jaxlib.__version__)
 except Exception as e: print("jax import failed:", e)
-try:
-    import tensorflow as tf; print("tf:", tf.__version__)
-except Exception as e: print("tf import failed:", e)
+# TensorFlow removed for efficiency
+print("tf: removed for efficiency")
 print("JAX_PLATFORM_NAME =", os.getenv("JAX_PLATFORM_NAME"))
 print("===================================")
 PY

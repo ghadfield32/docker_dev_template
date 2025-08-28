@@ -48,21 +48,30 @@ ensure_uv_env() {
   echo ". ${UV_PROJECT_ENVIRONMENT}/bin/activate" > /etc/profile.d/10-uv-activate.sh
 }
 
-# Sync core project dependencies (simplified)
+# Sync core project dependencies (prefer root pyproject.toml)
 sync_project_deps() {
-  if [[ -f "/workspace/.devcontainer/pyproject.toml" ]]; then
-    log "Syncing project deps with uv (frozen)"
+  # Prefer root pyproject for universal local+container dev
+  if [[ -f "/workspace/pyproject.toml" ]]; then
+    log "Syncing project deps from /workspace (frozen)"
+    (cd /workspace && uv sync --frozen --no-dev) || {
+      log "Lock out-of-date; refreshing from /workspace…"
+      (cd /workspace && uv sync --no-dev && uv lock)
+    }
+  elif [[ -f "/workspace/.devcontainer/pyproject.toml" ]]; then
+    log "Syncing project deps from .devcontainer (legacy fallback)"
     (cd /workspace/.devcontainer && uv sync --frozen --no-dev) || {
-      log "Lock out-of-date; refreshing..."
+      log "Lock out-of-date; refreshing from .devcontainer…"
       (cd /workspace/.devcontainer && uv sync --no-dev && uv lock)
     }
+  else
+    die "No pyproject.toml found at /workspace or .devcontainer"
   fi
 }
 
 # Simplified memory management for RTX 5080
 setup_memory_management() {
   log "Setting up RTX 5080 memory management..."
-  
+
   # Verify jemalloc
   if python -c "import ctypes; ctypes.CDLL('/usr/lib/x86_64-linux-gnu/libjemalloc.so.2')" 2>/dev/null; then
     log "jemalloc memory allocator loaded successfully"
@@ -70,7 +79,7 @@ setup_memory_management() {
     log "jemalloc not available - using system malloc"
     unset LD_PRELOAD
   fi
-  
+
   # Essential memory settings only (removed complex variables)
   export MALLOC_ARENA_MAX=1
   export MALLOC_TCACHE_MAX=0
@@ -78,20 +87,20 @@ setup_memory_management() {
   export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:True
   export XLA_PYTHON_CLIENT_PREALLOCATE=false
   export XLA_PYTHON_CLIENT_MEM_FRACTION=0.25
-  
+
   log "Memory management configured"
 }
 
 # GPU Framework Installation (JAX + PyTorch only, TensorFlow removed)
 install_gpu_frameworks() {
   log "Installing GPU frameworks (PyTorch + JAX only)..."
-  
+
   read_dotenv_if_present
-  
+
   # Clear JAX platform forcing
   unset JAX_PLATFORM_NAME || true
   unset JAX_PLATFORMS || true
-  
+
   # Remove conflicting NVIDIA packages to prevent double loads
   log "Cleaning up conflicting NVIDIA packages..."
   uv pip uninstall -y \
@@ -99,7 +108,7 @@ install_gpu_frameworks() {
     nvidia-cuda-cupti-cu12 nvidia-cusolver-cu12 nvidia-cusparse-cu12 \
     nvidia-nvjitlink-cu12 nvidia-nvtx-cu12 nvidia-cufft-cu12 nvidia-curand-cu12 \
     || true
-  
+
   # PyTorch with CUDA 12.8 support
   if ! python -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
     log "Installing PyTorch nightly cu128..."
@@ -108,7 +117,7 @@ install_gpu_frameworks() {
   else
     log "PyTorch CUDA already available"
   fi
-  
+
   # JAX with CUDA support  
   log "Installing JAX with CUDA support..."
   uv pip uninstall -y jax jaxlib jax-cuda12-plugin jax-cuda12-pjrt || true
@@ -119,7 +128,7 @@ install_gpu_frameworks() {
 # Framework initialization (PyTorch + JAX only)
 initialize_frameworks() {
   log "Initializing PyTorch and JAX..."
-  
+
   python3 -c "
 import os, gc
 print('Initializing JAX...')
@@ -169,9 +178,9 @@ except subprocess.CalledProcessError as e:
 # Simplified verification (PyTorch + JAX only)
 verify_frameworks() {
   log "Verifying frameworks..."
-  
+
   local failed=0
-  
+
   # PyTorch verification
   if python -c "
 import torch, gc
@@ -186,7 +195,7 @@ print('PyTorch CUDA verification passed')
     log "PyTorch verification: FAILED"
     failed=$((failed+1))
   fi
-  
+
   # JAX verification  
   if python -c "
 import jax, jax.numpy as jnp, gc
@@ -201,7 +210,7 @@ print('JAX CUDA verification passed')
     log "JAX verification: FAILED"  
     failed=$((failed+1))
   fi
-  
+
   if [ "${failed}" -gt 0 ]; then
     log "Some frameworks failed verification but continuing..."
   else
@@ -216,12 +225,12 @@ main() {
   fix_git_safety
   ensure_uv_env
   setup_memory_management
-  
+
   if [[ "${1:-}" == "--verify-only" ]]; then
     verify_frameworks || true
     return 0
   fi
-  
+
   sync_project_deps
   install_gpu_frameworks
   initialize_frameworks  
