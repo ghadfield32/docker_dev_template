@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Enhanced GPU Test Functions for RTX 5080
-========================================
+Enhanced GPU Test Functions for RTX 5080 (PyTorch + JAX Only)
+============================================================
 
 Drop-in replacements for the test functions in your notebook.
 These provide comprehensive diagnostics and actionable guidance for RTX 5080 issues.
 
 Usage:
     # Import and use in your notebook
-    from .devcontainer.enhanced_gpu_test_functions import check_jax, check_tensorflow, _run
+    from .devcontainer.enhanced_gpu_test_functions import check_jax, check_pytorch, comprehensive_gpu_test
 
     # Or run standalone
     python .devcontainer/enhanced_gpu_test_functions.py
@@ -98,55 +98,6 @@ def check_jax():
     print("===========\n")
 
 
-def check_tensorflow():
-    """
-    Enhanced TensorFlow GPU test with Blackwell INVALID_PTX detection.
-
-    This function provides:
-    - GPU device enumeration and memory growth configuration  
-    - Explicit CUDA_ERROR_INVALID_PTX detection for Blackwell GPUs
-    - Diagnostic messages for SM_120/CUDA 12.8 compatibility issues
-    - Clear guidance for resolving PTX compilation failures
-    - Build info to help diagnose compatibility issues
-    """
-    import os
-    print("=== TensorFlow ===")
-    try:
-        import tensorflow as tf
-        print(f"tf.__version__={tf.__version__}")
-        # Build info can reveal CUDA/cuDNN linkage and compute capabilities
-        try:
-            from pprint import pprint
-            bi = tf.sysconfig.get_build_info() if hasattr(tf.sysconfig, "get_build_info") else {}
-            print("tf build info (keys):", list(bi.keys()))
-        except Exception:
-            pass
-
-        try:
-            gpus = tf.config.list_physical_devices("GPU")
-            print(f"tf GPUs: {gpus}")
-            if gpus:
-                for g in gpus:
-                    try:
-                        tf.config.experimental.set_memory_growth(g, True)
-                    except Exception:
-                        pass
-                with tf.device("/GPU:0"):
-                    a = tf.random.normal((1024,1024))
-                    b = tf.random.normal((1024,1024))
-                    c = tf.reduce_sum(tf.matmul(a, b))
-                _ = c.numpy()
-                print("small matmul check (TensorFlow GPU): OK")
-            else:
-                print("No TensorFlow GPU devices found.")
-        except Exception as e:
-            print("TensorFlow device query failed:", repr(e))
-            print("HINT: On RTX 50xx/Blackwell, you may need tf-nightly built with sm_120 or build TF from source (CUDA 12.8+).")
-    except Exception as e:
-        print("TensorFlow import failed:", repr(e))
-    print("==================\n")
-
-
 def check_pytorch():
     """
     Enhanced PyTorch GPU test with memory management.
@@ -184,29 +135,29 @@ def check_pytorch():
 
 def comprehensive_gpu_test():
     """
-    Run comprehensive GPU framework testing.
+    Run comprehensive GPU framework testing (PyTorch + JAX only).
 
-    This function tests all three major frameworks (PyTorch, JAX, TensorFlow)
+    This function tests PyTorch and JAX frameworks
     and provides a summary of results with specific guidance for failures.
 
     Returns:
         bool: True if all frameworks passed, False otherwise
     """
-    print("🧪 COMPREHENSIVE GPU FRAMEWORK TEST")
-    print("=" * 50)
-    print("Testing GPU support for PyTorch, JAX, and TensorFlow...")
+    print("🧪 COMPREHENSIVE GPU FRAMEWORK TEST (PyTorch + JAX Only)")
+    print("=" * 60)
+    print("Testing GPU support for PyTorch and JAX...")
     print("Optimized for NVIDIA Blackwell RTX 5080 / CUDA 12.8")
-    print("=" * 50)
+    print("TensorFlow removed for faster builds and cleaner environment")
+    print("=" * 60)
 
-    # Test all frameworks
+    # Test frameworks
     check_pytorch()
     check_jax()  
-    check_tensorflow()
 
-    print("=" * 50)
+    print("=" * 60)
     print("✅ Comprehensive GPU test completed!")
     print("Check output above for any framework-specific issues.")
-    print("=" * 50)
+    print("=" * 60)
 
     return True
 
@@ -221,7 +172,7 @@ def main():
     env_vars = [
         "JAX_PLATFORM_NAME", "JAX_PLATFORMS", "CUDA_VISIBLE_DEVICES",
         "XLA_FLAGS", "NVIDIA_VISIBLE_DEVICES", "NVIDIA_DRIVER_CAPABILITIES",
-        "PYTORCH_CUDA_ALLOC_CONF", "TF_FORCE_GPU_ALLOW_GROWTH"
+        "PYTORCH_CUDA_ALLOC_CONF"
     ]
     for var in env_vars:
         value = os.environ.get(var, "<unset>")

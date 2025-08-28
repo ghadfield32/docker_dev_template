@@ -1,4 +1,4 @@
-# .devcontainer/docker-compose.yml
+# .devcontainer/docker-compose.yml - TensorFlow removed, optimized for faster builds
 name: ${ENV_NAME:-docker_dev_template}
 
 services:
@@ -10,13 +10,17 @@ services:
         CUDA_TAG: ${CUDA_TAG:-12.8.0}
         PYTHON_VER: ${PYTHON_VER:-3.10}
         ENV_NAME: ${ENV_NAME:-docker_dev_template}
+      # Enable BuildKit for better caching
+      target: ""
+      cache_from:
+        - nvidia/cuda:${CUDA_TAG:-12.8.0}-runtime-ubuntu22.04
 
     restart: unless-stopped
     depends_on:
       mlflow:
         condition: service_healthy
 
-    # GPU configuration - use proper syntax
+    # GPU configuration - simplified
     deploy:
       resources:
         reservations:
@@ -26,10 +30,8 @@ services:
               capabilities: [gpu]
 
     init: true
-
-    # RTX 5080 optimized runtime configuration
     gpus: all
-    shm_size: 8g
+    shm_size: 4g  # Reduced from 8g since no TensorFlow
     ulimits:
       memlock: -1
       stack: 67108864
@@ -38,40 +40,28 @@ services:
       # Core configuration
       - PYTHON_VER=${PYTHON_VER:-3.10}
       - UV_PROJECT_ENVIRONMENT=/app/.venv
-      - INSTALL_TF=${INSTALL_TF:-0}
 
-      # Critical: jemalloc memory management
-      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-
-      # GPU Environment
+      # GPU Environment  
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_VISIBLE_DEVICES=0
       - LD_LIBRARY_PATH=/app/.venv/lib:/usr/local/cuda/lib64
 
-      # JAX Configuration (RTX 5080 optimized) - REMOVED JAX_PLATFORM_NAME forcing
+      # Simplified memory management (jemalloc)
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+      - MALLOC_ARENA_MAX=1
+      - MALLOC_TCACHE_MAX=0
+      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
+
+      # JAX Configuration (RTX 5080 optimized)
       - XLA_PYTHON_CLIENT_PREALLOCATE=false
       - XLA_PYTHON_CLIENT_ALLOCATOR=platform
       - XLA_PYTHON_CLIENT_MEM_FRACTION=0.25
       - XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda
-      - JAX_DISABLE_JIT=false
-      - JAX_ENABLE_X64=false
       - JAX_PREALLOCATION_SIZE_LIMIT_BYTES=8589934592
 
       # PyTorch Configuration (RTX 5080 optimized)
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:True
-      - TORCH_CUDNN_V8_API_ENABLED=1
-
-      # TensorFlow Configuration (RTX 5080 optimized) - REMOVED
-      # - TF_GPU_ALLOCATOR=cuda_malloc_async
-      # - TF_FORCE_GPU_ALLOW_GROWTH=true
-
-          # Additional memory management for RTX 5080
-      - MALLOC_ARENA_MAX=1
-      - MALLOC_MMAP_THRESHOLD_=131072
-      - MALLOC_TCACHE_MAX=0
-      - MALLOC_MMAP_MAX=0
-      - PYTORCH_NO_CUDA_MEMORY_CACHING=1
 
       # Jupyter
       - JUPYTER_TOKEN=${JUPYTER_TOKEN:-jupyter}
@@ -79,6 +69,8 @@ services:
     volumes:
       - ..:/workspace:delegated
       - ../mlruns:/workspace/mlruns
+      # Cache mounts for faster rebuilds
+      - uv-cache:/root/.cache/uv
 
     ports:
       - "${HOST_JUPYTER_PORT:-8890}:8888"
@@ -102,12 +94,12 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 30s  # Reduced from 60s
 
     labels:
       - "com.docker.compose.project=${ENV_NAME:-docker_dev_template}"
       - "com.docker.compose.service=datascience"
-      - "description=AI/ML Dev Env (GPU)"
+      - "description=AI/ML Dev Env (PyTorch+JAX GPU)"
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -130,4 +122,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-      start_period: 30s
+      start_period: 15s  # Reduced from 30s
+
+# Named volume for uv cache persistence
+volumes:
+  uv-cache:

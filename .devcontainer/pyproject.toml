@@ -1,12 +1,10 @@
 [project]
 name = "docker_dev_template"
 version = "0.1.0"
-description = "Pytorch and Jax GPU docker container"
+description = "PyTorch and JAX GPU docker container (TensorFlow removed)"
 authors = [{ name = "Geoffrey Hadfield" }]
 license = "MIT"
 readme = "README.md"
-
-# Python versions (host + container)
 requires-python = ">=3.10,<3.13"
 
 dependencies = [
@@ -46,11 +44,10 @@ dependencies = [
   "pydantic>=2.0.0",
   "pydantic-settings",
   "kagglehub[pandas-datasets]>=0.3.12,<0.4.0",
-  "duckdb~=1.3.2",           # latest stable Python client as of Aug 22, 2025
+  "duckdb~=1.3.2",
 ]
 
 [project.optional-dependencies]
-# Developer tooling, safe everywhere
 dev = [
   "pytest>=7.0.0",
   "black>=23.0.0",
@@ -60,22 +57,11 @@ dev = [
   "invoke>=2.2",
 ]
 
-# Optional: CUDA-12.x tools like CuPy are Linux-only; leave off by default
-cuda = [
-  # Install explicitly inside container if you truly need it:
-  # "cupy-cuda12x>=12.0.0 ; platform_system == 'Linux'",
-]
-
-# GPU frameworks are *disabled by default* and only used on Linux
+# GPU frameworks for Linux only (TensorFlow completely removed)
 linux-gpu = [
-  # IMPORTANT:
-  # 1) We do NOT hard-pin nightly day slices here. We allow pre-releases at sync time.
-  # 2) We add Linux markers to avoid Windows resolution failures.
   "torch      ; platform_system == 'Linux'",
   "torchvision; platform_system == 'Linux'",
   "torchaudio ; platform_system == 'Linux'",
-
-  # JAX CUDA-only wheels are Linux-only
   "jax[cuda12-local]>=0.4.26 ; platform_system == 'Linux'",
 ]
 
@@ -83,9 +69,6 @@ memory-management = [
   "psutil>=5.9.0",
   "memory-profiler>=0.61.0",
 ]
-
-# --- Removed the global [tool.uv.index]/[tool.uv.sources] block ---
-# We will pass PyTorch nightly indexes during container build or `uv sync` in Linux only.
 
 [tool.pytensor]
 device = "cuda"
@@ -97,6 +80,4 @@ optimizer = "fast_run"
 compile-bytecode = true
 link-mode = "copy"
 python-downloads = "never"
-# Tip: we’ll supply `--prerelease=allow` and `--index-strategy unsafe-best-match`
-# only in the Linux container where we actually want nightlies.
 

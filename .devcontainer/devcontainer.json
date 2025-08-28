@@ -43,16 +43,12 @@
     "CUDA_STACK": "pip-cuda",
     "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
     "MALLOC_ARENA_MAX": "1",
-    "MALLOC_MMAP_THRESHOLD_": "131072",
     "MALLOC_TCACHE_MAX": "0",
-    "MALLOC_MMAP_MAX": "0",
     "PYTORCH_NO_CUDA_MEMORY_CACHING": "1",
     "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
     "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.25",
     "XLA_PYTHON_CLIENT_ALLOCATOR": "platform",
-    "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512,expandable_segments:True",
-    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
-    "TF_GPU_ALLOCATOR": "cuda_malloc_async"
+    "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512,expandable_segments:True"
   },
 
   "remoteEnv": {
