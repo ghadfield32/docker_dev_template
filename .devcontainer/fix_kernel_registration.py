@@ -20,13 +20,17 @@ def register_kernels_properly():
     in_container = Path('/.dockerenv').exists()
     venv_path = Path(sys.executable).parent.parent
     
+    # Get environment name from environment variable
+    env_name = os.environ.get('ENV_NAME', 'docker_dev_template')
+    
     print(f"Environment: {'Container' if in_container else 'Local'}")
     print(f"Python executable: {sys.executable}")
     print(f"Virtual environment: {venv_path}")
+    print(f"Environment name: {env_name}")
     
-    # Base kernel configuration
-    kernel_name = "docker_dev_template"
-    display_name = "Python (docker_dev_template)"
+    # Base kernel configuration using ENV_NAME
+    kernel_name = env_name
+    display_name = f"Python ({env_name})"
     
     if in_container:
         # Container registration - register both user and system
@@ -101,7 +105,10 @@ def create_workspace_kernel_script():
     This addresses your specific issue with cd .devcontainer; uv sync
     """
     
-    script_content = '''#!/usr/bin/env bash
+    # Get environment name
+    env_name = os.environ.get('ENV_NAME', 'docker_dev_template')
+    
+    script_content = f'''#!/usr/bin/env bash
 # Run this from workspace root to register kernels properly after uv sync
 
 set -euo pipefail
@@ -127,8 +134,8 @@ fi
 
 echo "Using Python: $PYTHON_PATH"
 
-# Register the kernel
-"$PYTHON_PATH" -m ipykernel install --user --name "docker_dev_template" --display-name "Python (docker_dev_template)"
+# Register the kernel with environment name
+"$PYTHON_PATH" -m ipykernel install --user --name "{env_name}" --display-name "Python ({env_name})"
 
 echo "Kernel registered successfully!"
 echo "You can now select this kernel in Jupyter Lab/Notebook"

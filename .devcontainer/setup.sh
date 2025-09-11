@@ -27,7 +27,7 @@ cd /workspace
 # Check if dependencies need to be installed
 if ! python -c "import pymc" 2>/dev/null; then
     log "📦 Installing project dependencies..."
-    
+
     # Prefer root pyproject.toml for universal local+container dev
     if [ -f "pyproject.toml" ]; then
         log "Using workspace pyproject.toml"
@@ -66,6 +66,7 @@ log "🔬 Running environment verification..."
 python .devcontainer/verify_env.py || true
 
 log "✅ Setup completed"
+
 
 
 
