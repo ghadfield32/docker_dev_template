@@ -1,0 +1,123 @@
+2025-09-11 20:54:44.553420: I external/xla/xla/pjrt/pjrt_api.cc:115] GetPjrtApi was found for cuda at /app/.venv/lib/python3.10/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so
+2025-09-11 20:54:44.553533: I external/xla/xla/pjrt/pjrt_api.cc:93] PJRT_Api is set for device type cuda
+2025-09-11 20:54:44.559228: I external/xla/xla/pjrt/pjrt_api.cc:161] The PJRT plugin has PJRT API version 0.70. The framework PJRT API version is 0.70.
+2025-09-11 20:54:44.563871: I external/xla/xla/service/service.cc:153] XLA service 0x7e696ab96440 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2025-09-11 20:54:44.563911: I external/xla/xla/service/service.cc:161]   StreamExecutor device (0): NVIDIA GeForce RTX 4090, Compute Capability 8.9
+E0911 20:54:44.578152      41 cuda_dnn.cc:523] Loaded runtime CuDNN library: 9.1.0 but source was compiled with: 9.8.0.  CuDNN library needs to have matching major version and equal or higher minor version. If using a binary install, upgrade your CuDNN library.  If building from sources, make sure the library loaded at runtime is compatible with the version specified during compile configuration.
+E0911 20:54:44.580960      41 cuda_dnn.cc:523] Loaded runtime CuDNN library: 9.1.0 but source was compiled with: 9.8.0.  CuDNN library needs to have matching major version and equal or higher minor version. If using a binary install, upgrade your CuDNN library.  If building from sources, make sure the library loaded at runtime is compatible with the version specified during compile configuration.
+2025-09-11 20:54:44.581034: I external/xla/xla/pjrt/pjrt_c_api_client.cc:130] PjRtCApiClient created.
+E0911 20:54:44.621516      41 cuda_dnn.cc:523] Loaded runtime CuDNN library: 9.1.0 but source was compiled with: 9.8.0.  CuDNN library needs to have matching major version and equal or higher minor version. If using a binary install, upgrade your CuDNN library.  If building from sources, make sure the library loaded at runtime is compatible with the version specified during compile configuration.
+E0911 20:54:44.622314      41 cuda_dnn.cc:523] Loaded runtime CuDNN library: 9.1.0 but source was compiled with: 9.8.0.  CuDNN library needs to have matching major version and equal or higher minor version. If using a binary install, upgrade your CuDNN library.  If building from sources, make sure the library loaded at runtime is compatible with the version specified during compile configuration.
+
+======================================================================
+  ENVIRONMENT VARIABLE VALIDATION
+======================================================================
+
+✓ Check XLA_PYTHON_CLIENT_MEM_FRACTION -> 0.4
+  ✅ Valid
+
+✓ Check JAX_PREALLOCATION_SIZE_LIMIT_BYTES -> 17179869184
+  ✅ Valid
+
+======================================================================
+  ENVIRONMENT CHECK
+======================================================================
+Python executable: /app/.venv/bin/python
+Python version: 3.10.12 (main, Aug 15 2025, 14:32:43) [GCC 11.4.0]
+VIRTUAL_ENV: /app/.venv
+PATH contains .venv: True
+
+CUDA environment variables:
+  CUDA_HOME: not set
+  CUDA_PATH: not set
+  CUDA_VISIBLE_DEVICES: 0
+  LD_LIBRARY_PATH: /app/.venv/lib:/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:
+  NVIDIA_VISIBLE_DEVICES: all
+
+--- GPU Hardware Detection ---
+Command: nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader
+Output: NVIDIA GeForce RTX 4090, 560.94, 24564 MiB
+GPU detected: NVIDIA GeForce RTX 4090, 560.94, 24564 MiB
+
+======================================================================
+  CUDA LIBRARY DIAGNOSIS
+======================================================================
+Command: nvcc --version
+Output: nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2024 NVIDIA Corporation
+Built on Thu_Mar_28_02:18:24_PDT_2024
+Cuda compilation tools, release 12.4, V12.4.131
+Build cuda_12.4.r12.4/compiler.34097967_0
+NVCC found - CUDA development tools available
+
+CUDA libraries found:
+  ✅ libcudart.so
+  ✅ libcublas.so
+  ✅ libcurand.so
+  ✅ libcufft.so
+  ✅ libcusparse.so
+  ✅ libcusolver.so
+
+--- CuDNN Version Detection ---
+PyTorch CuDNN version: 90100
+
+======================================================================
+  PYTORCH GPU TEST
+======================================================================
+PyTorch version: 2.6.0+cu124
+CUDA available: True
+CUDA device count: 1
+Current device: 0
+Device name: NVIDIA GeForce RTX 4090
+Matrix multiplication (2000x2000): 1.16 ms
+Result checksum: -65412.86
+GPU memory - Allocated: 0.00 GB, Cached: 0.00 GB
+
+======================================================================
+  JAX INITIALIZATION TEST
+======================================================================
+Importing JAX libraries...
+JAX version: 0.6.2
+JAXlib version: 0.6.2
+
+Testing XLA client initialization...
+XLA client imported successfully
+Attempting to initialize GPU plugin...
+GPU plugin options generated successfully
+Memory fraction: 0.4
+
+======================================================================
+  JAX GPU COMPUTATION TEST
+======================================================================
+XLA backend: gpu
+Available devices: [CudaDevice(id=0)]
+GPU devices found: [CudaDevice(id=0)]
+
+Testing GPU computation...
+❌ JAX GPU computation error: FAILED_PRECONDITION: DNN library initialization failed. Look at the errors above for more details.
+
+======================================================================
+  DIAGNOSTIC REPORT GENERATION
+======================================================================
+
+--- CuDNN Version Detection ---
+PyTorch CuDNN version: 90100
+
+======================================================================
+  FINAL SUMMARY
+======================================================================
+env_vars       : ✅ PASS
+environment    : ✅ PASS
+cuda_libs      : ✅ PASS
+cudnn_versions : ✅ PASS
+pytorch        : ✅ PASS
+jax_init       : ✅ PASS
+jax_compute    : ❌ FAIL
+
+Overall: 5/7 tests passed
+
+🔧 TROUBLESHOOTING RECOMMENDATIONS:
+1. Check CuDNN version compatibility between PyTorch and JAX
+2. Verify CUDA library paths in LD_LIBRARY_PATH
+3. Ensure JAX was compiled with correct CUDA version
+4. Run with --detailed flag for comprehensive diagnostics

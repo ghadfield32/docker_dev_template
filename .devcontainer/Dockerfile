@@ -1,87 +1,109 @@
-# .devcontainer/Dockerfile - Optimized for faster builds
-ARG CUDA_TAG=12.8.0
-# Use NVIDIA's runtime image with pre-installed CUDA libraries (saves 1+ GB downloads)
-FROM nvidia/cuda:${CUDA_TAG}-runtime-ubuntu22.04 as runtime-base
+# Dockerfile: RTX 4090 devcontainer with UV, JAX, and PyTorch (CUDA 12.x)
+
+ARG CUDA_TAG=12.4.0
 FROM nvidia/cuda:${CUDA_TAG}-devel-ubuntu22.04
 
 ARG PYTHON_VER=3.10
 ARG ENV_NAME=docker_dev_template
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Single RUN layer for system packages with optimized cache mounts
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+# System dependencies
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lists,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-        # Essential tools
-        bash curl ca-certificates git procps htop util-linux \
+        bash curl ca-certificates git procps htop \
         python3 python3-venv python3-pip python3-dev \
-        # Build tools (minimal set)
         build-essential cmake pkg-config \
-        # Memory management 
         libjemalloc2 libjemalloc-dev \
-        # Network tools for diagnostics
-        iproute2 net-tools lsof \
+        iproute2 net-tools lsof wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Node.js in single layer with cache mount
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv package manager (pinned version for reproducibility)
+# UV package manager
 COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /uvx /bin/
 
 WORKDIR /app
 
-# Create virtual environment early
+# Create venv managed by UV
 RUN uv venv .venv --python "${PYTHON_VER}" --prompt "${ENV_NAME}"
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:${PATH}" \
-    UV_PROJECT_ENVIRONMENT=/app/.venv
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    PYTHONPATH="/workspace"
 
-# Essential memory management (simplified from original complex setup)
+# Memory and allocator settings
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2 \
-    MALLOC_ARENA_MAX=1 \
+    MALLOC_ARENA_MAX=2 \
     MALLOC_TCACHE_MAX=0 \
     PYTORCH_NO_CUDA_MEMORY_CACHING=1
 
-# GPU framework environment (JAX & PyTorch only, TensorFlow removed)
+# GPU‑relevant environment
 ENV XLA_PYTHON_CLIENT_PREALLOCATE=false \
-    XLA_PYTHON_CLIENT_MEM_FRACTION=0.25 \
+    XLA_PYTHON_CLIENT_MEM_FRACTION=0.4 \
     XLA_PYTHON_CLIENT_ALLOCATOR=platform \
-    PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:True \
-    JAX_PREALLOCATION_SIZE_LIMIT_BYTES=8589934592
+    PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:1024,expandable_segments:True \
+    JAX_PREALLOCATION_SIZE_LIMIT_BYTES=17179869184
 
-# Install core Python packages first (better caching)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --no-cache-dir jupyterlab ipykernel
-
-# CUDA symlink setup (simplified)
-RUN ln -sf $(find /usr/local -name "cuda-*" -type d | head -n1) /usr/local/cuda || \
-    ln -sf /usr/local/cuda /usr/local/cuda
-
-# Copy project files for dependency installation (from repo root)
+# Bring in project descriptors and tests
 COPY pyproject.toml /workspace/
 COPY uv.lock* /workspace/
+COPY .devcontainer/validate_gpu.py /app/validate_gpu.py
+COPY .devcontainer/tests/ /app/tests/
 
-# Install project dependencies with better error handling
-RUN --mount=type=cache,target=/root/.cache/uv \
-    cd /workspace && \
-    (uv sync --frozen --no-dev || (echo "🔁 Lock out-of-date; refreshing…" && uv sync --no-dev && uv lock))
+# Resolve project dependencies with UV
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    cd /workspace && (uv sync --frozen --no-dev || (uv sync --no-dev && uv lock))
 
-# Essential CUDA libraries path
-ENV LD_LIBRARY_PATH="/app/.venv/lib:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+# CRITICAL FIX 2: Install PyTorch first to establish CUDA environment
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    echo "Installing PyTorch with CUDA 12.4..." && \
+    uv pip install --no-cache-dir torch torchvision torchaudio \
+        --index-url https://download.pytorch.org/whl/cu124
 
-# Workspace setup
+# CRITICAL FIX 3: Install compatible CuDNN 9.8.0 to satisfy JAX requirements
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    echo "Upgrading CuDNN to 9.8.0 for JAX compatibility..." && \
+    uv pip install --no-cache-dir --upgrade nvidia-cudnn-cu12==9.8.0.69 || \
+    uv pip install --no-cache-dir --upgrade nvidia-cudnn-cu12>=9.8.0
+
+# CRITICAL FIX 4: Install JAX after CuDNN upgrade with proper dependency resolution
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    echo "Removing any existing JAX installations..." && \
+    (uv pip uninstall jax jaxlib jax-cuda12-plugin jax-cuda12-pjrt || true) && \
+    echo "Installing JAX with CUDA 12 support..." && \
+    (uv pip install --no-cache-dir "jax[cuda12-local]>=0.4.26" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html \
+     || uv pip install --no-cache-dir "jax[cpu]>=0.4.26")
+
+# Jupyter kernel support
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    uv pip install ipykernel jupyter-client jupyterlab
+
+# CUDA libs in path - include both system and package CUDA libraries
+ENV LD_LIBRARY_PATH="/app/.venv/lib:/app/.venv/lib/python3.10/site-packages/nvidia/cudnn/lib:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
+
+# Shell activation helper with updated library paths
+RUN echo '#!/bin/bash' > /app/activate_uv.sh && \
+    echo 'export VIRTUAL_ENV="/app/.venv"' >> /app/activate_uv.sh && \
+    echo 'export PATH="/app/.venv/bin:$PATH"' >> /app/activate_uv.sh && \
+    echo 'export UV_PROJECT_ENVIRONMENT="/app/.venv"' >> /app/activate_uv.sh && \
+    echo 'export PYTHONPATH="/workspace:$PYTHONPATH"' >> /app/activate_uv.sh && \
+    echo 'export LD_LIBRARY_PATH="/app/.venv/lib:/app/.venv/lib/python3.10/site-packages/nvidia/cudnn/lib:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"' >> /app/activate_uv.sh && \
+    echo 'cd /workspace' >> /app/activate_uv.sh && \
+    chmod +x /app/activate_uv.sh && \
+    echo 'source /app/activate_uv.sh' > /etc/profile.d/10-uv-activate.sh && \
+    echo 'source /app/activate_uv.sh' >> /root/.bashrc && \
+    chmod +x /etc/profile.d/10-uv-activate.sh
+
+# Enhanced healthcheck script with CuDNN diagnostics
+RUN echo '#!/bin/bash' > /app/healthcheck.sh && \
+    echo 'source /app/.venv/bin/activate' >> /app/healthcheck.sh && \
+    echo 'echo "=== CuDNN Version Check ==="' >> /app/healthcheck.sh && \
+    echo 'python -c "import torch; print(f\"PyTorch CuDNN: {torch.backends.cudnn.version()}\")" || echo "PyTorch CuDNN check failed"' >> /app/healthcheck.sh && \
+    echo 'echo "=== JAX Device Check ==="' >> /app/healthcheck.sh && \
+    echo 'python -c "import jax; print(f\"JAX devices: {jax.devices()}\")" || echo "JAX device check failed"' >> /app/healthcheck.sh && \
+    echo 'echo "=== GPU Validation ==="' >> /app/healthcheck.sh && \
+    echo 'python /app/validate_gpu.py --quick' >> /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
+
 WORKDIR /workspace
-RUN echo 'cd /workspace' > /etc/profile.d/99-workspace-cd.sh && \
-    mkdir -p /root/.ipython/profile_default/startup && \
-    printf "import os, sys\nos.chdir('/workspace')\nsys.path.append('/workspace')\n" \
-      > /root/.ipython/profile_default/startup/00-cd-workspace.py && \
-    echo '. /app/.venv/bin/activate' > /etc/profile.d/10-uv-activate.sh
-
-CMD ["bash"]
-
+CMD ["bash", "-l"]
