@@ -50,15 +50,27 @@ dependencies = [
   # ▶ Video download stack
   #   - pytube main-branch until next PyPI release (optional fallback)
   "pytube @ git+https://github.com/pytube/pytube",
-  "yt-dlp>=2024.12.0",
+  "yt-dlp==2025.9.5",  # Pinned for stability
   #   - optional convenience wrapper (does NOT install ffmpeg binary!)
-  "ffmpeg-python >= 0.2.0",
+  "ffmpeg-python==0.2.0",  # Pinned for stability
 
-  # Ultralytics YOLO (SOTA object detection, segmentation, etc.)
-  # ▶ Computer vision
-  "ultralytics==8.3.158",
-  "opencv-python-headless>=4.10.0",
-  "roboflow>=1.0.0",
+  # ▶ Computer Vision Stack
+  # Core CV libraries
+  "ultralytics==8.3.158",  # YOLO v8 - pinned for stability
+  "opencv-contrib-python-headless>=4.10.0",  # OpenCV with contrib modules
+  "roboflow==1.2.9",  # Roboflow API client - pinned for stability
+  
+  # Object tracking and supervision
+  "supervision>=0.17.0",  # Modern CV utilities and tracking
+  "lap>=0.4.0",  # Linear Assignment Problem solver for tracking
+  
+  # Image augmentation and processing
+  "albumentations>=1.3.0",  # Fast image augmentation
+  "imgaug>=0.4.0",  # Image augmentation library
+  "pillow>=10.0.0",  # Image processing
+  
+  # Video processing and download
+  "moviepy==2.2.1",  # Video editing - pinned for stability
   "mlflow>=3.1.1,<4.0.0",
   "optuna-integration[mlflow]>=4.4.0,<5.0.0",
   
@@ -81,6 +93,12 @@ dev = [
 
 cuda = [
   "cupy-cuda12x>=12.0.0",  # For CUDA 12.x
+]
+
+basketball = [
+  # Additional basketball-specific packages
+  "sportsipy>=0.6.0",  # Sports statistics
+  "nba-api>=1.4.0",  # NBA API client
 ]
 
 # ─── uv configuration ──────────────────────────────────────────
