@@ -55,7 +55,8 @@ PROJECT_ROOT: Path = Path("src")
 COLUMN_SCHEMA_PATH: Path = PROJECT_ROOT / "heat_data_scientist_2025" / "data" / "column_schema.yaml"
 
 # Project Settings:
-start_season = 2009
+start_season = 2009 # need to start back to 2009 for the lagged features in machine learning pipeline
+project_start_season = 2010 # only pull from 2010 on for rankings per project 
 end_season = 2024
 final_top_data_amt = 10
 season_type = 'Regular Season'
@@ -64,20 +65,18 @@ minutes_total_minimum_per_season = 500
 # --- ML Pipeline Configuration ---
 class MLPipelineConfig:
     """Configuration for ML Pipeline automation"""
-    
+
     # Target and prediction settings
     TARGET_COLUMN = "season_pie"
     PREDICTION_YEAR = 2025
     SOURCE_YEAR = 2024  # Use 2024 data to predict 2025
-    
+
     # Training settings
-    TRAIN_START_YEAR = 2011  # First year with reliable lag features
     TEST_YEARS = [2023, 2024]  # Hold out for validation
-    
+
     # Model settings
-    DEFAULT_STRATEGY = "filter_complete"  # "filter_complete", "two_stage", "auto"
     RANDOM_STATE = 42
-    
+
     # Required lag features for complete cases
     REQUIRED_LAG_FEATURES = [
         "season_pie",
@@ -88,11 +87,10 @@ class MLPipelineConfig:
         "defensive_per36", "production_per36",
         "win_pct", "team_win_pct_final"
     ]
-    
+
     # Feature engineering settings
-    NULL_STRATEGY = "diagnose_only"
     CREATE_LAG_YEARS = [1]  # Create lag1 features
-    
+
     # Model parameters
     MODEL_PARAMS = {
         'random_forest': {
@@ -112,21 +110,20 @@ class MLPipelineConfig:
             'n_jobs': -1
         }
     }
-    
+
     # Evaluation settings
     EVALUATION_METRICS = ['r2', 'rmse', 'mae', 'mape']
-    TOP_N_PREDICTIONS = 50  # Top N players for leaderboard
-    
+
     # Feature importance settings
     MIN_FEATURE_IMPORTANCE = 0.001
     TOP_FEATURES_COUNT = 20
-    
+
     # Output settings
     SAVE_ENGINEERED_DATA = True
     SAVE_MODELS = True
     SAVE_PREDICTIONS = True
     SAVE_EVALUATION = True
-    
+
     # Automation settings
     AUTO_FEATURE_SELECTION = True
     AUTO_HYPERPARAMETER_TUNING = False  # Set to True for automated tuning
@@ -223,7 +220,7 @@ numerical_features = [
     "portability_index_lag1", "pi_scoring_eff_lag1", "pi_shooting_lag1",
     "pi_defense_lag1", "pi_versatility_lag1", "pi_passing_lag1", "pi_usage_term_lag1",
 
-    
+
     "fgm_per36_lag1", "fga_per36_lag1", "ftm_per36_lag1", "fta_per36_lag1",
     "oreb_per36_lag1", "dreb_per36_lag1", "stl_per36_lag1", "blk_per36_lag1",
     "pf_per36_lag1", "tov_per36_lag1",
@@ -248,7 +245,7 @@ class Paths:
     rankings_path: Path = RANKINGS_PATH
     eda_out_dir: Path = EDA_OUT_DIR
     column_schema_path: Path = COLUMN_SCHEMA_PATH
-    
+
     # ML Pipeline paths
     ml_models_dir: Path = ML_MODELS_DIR
     ml_predictions_dir: Path = ML_PREDICTIONS_DIR
@@ -302,7 +299,7 @@ class Paths:
     def model_path(self, model_name: str, year: int) -> Path:
         """Get path for saving/loading trained models."""
         return self.ml_models_dir / f"{model_name}_{year}_model.pkl"
-    
+
     def predictions_path(self, target: str, year: int | None = None) -> Path:
         """
         Flexible getter for per-target predictions path.
@@ -359,11 +356,11 @@ class Paths:
 
         return self.ml_predictions_dir / f"{safe_target}_leaderboard_{int(year)}.csv"
 
-    
+
     def evaluation_path(self, model_name: str, year: int) -> Path:
         """Get path for saving/loading evaluation results."""
         return self.ml_evaluation_dir / f"{model_name}_{year}_evaluation.json"
-    
+
     def feature_importance_path(self, model_name: str, year: int) -> Path:
         """Get path for saving/loading feature importance."""
         return self.ml_evaluation_dir / f"{model_name}_{year}_feature_importance.csv"
@@ -377,7 +374,7 @@ if __name__ == "__main__":
     print(f"ML models dir: {CFG.ml_models_dir}")
     print(f"ML predictions dir: {CFG.ml_predictions_dir}")
     print(f"ML evaluation dir: {CFG.ml_evaluation_dir}")
-    
+
     print("\nML Config:")
     print(f"Target column: {ML_CONFIG.TARGET_COLUMN}")
     print(f"Prediction year: {ML_CONFIG.PREDICTION_YEAR}")

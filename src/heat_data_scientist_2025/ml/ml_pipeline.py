@@ -226,7 +226,7 @@ def validate_and_evaluate_features(
         ("ordinal_categoricals", ordinal_categoricals),
         ("y_variables", y_variables),
     ]
-    
+
     for feature_type, features in groups:
         available = [f for f in features if f in df.columns]
         missing = [f for f in features if f not in df.columns]
@@ -252,7 +252,7 @@ def validate_and_evaluate_features(
     all_specified = numerical_features + nominal_categoricals + ordinal_categoricals + y_variables
     total_spec = len(all_specified)
     total_avail = len([f for f in all_specified if f in df.columns])
-    
+
     results["overall"] = {
         "total_specified": int(total_spec),
         "total_available": int(total_avail),
@@ -346,13 +346,13 @@ def filter_features_by_importance(
 # Create game score per 36 minutes feature
 def create_game_score_per36_feature(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     out = df.copy()
-    
+
     req = [
         "total_points", "total_fgm", "total_fga", "total_fta", "total_ftm",
         "total_reb_off", "total_reb_def", "total_steals", "total_assists", 
         "total_blocks", "total_pf", "total_tov", "total_minutes",
     ]
-    
+
     missing = [c for c in req if c not in out.columns]
     if missing:
         print(f"Missing game score columns {missing}; using season_pie proxy")
@@ -575,7 +575,7 @@ def save_feature_importance_results(results: Dict[str, Any], output_dir: Path, v
     (out / "model_evaluation_metrics.json").write_text(
         json.dumps(results["evaluation_metrics"], indent=2, default=str)
     )
-    
+
     if verbose:
         print(f"Saved summaries to {out}")
 
@@ -590,7 +590,7 @@ def print_final_results(results: Dict[str, Any], verbose: bool = True) -> None:
 
     for target_name in results["models"].keys():
         print(f"\n{target_name.upper()}")
-        
+
         if target_name in results["evaluation_metrics"]:
             m = results["evaluation_metrics"][target_name]
             print(f"  R²: {m['r2']:.4f}, RMSE: {m['rmse']:.4f}, MAE: {m['mae']:.4f}")

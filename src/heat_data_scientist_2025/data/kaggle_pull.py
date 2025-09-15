@@ -35,7 +35,7 @@ def _safe_div(num: pd.Series, den: pd.Series) -> pd.Series:
     """Safe division - returns 0 when denominator <= 0"""
     if not hasattr(den, "fillna") or not hasattr(num, "index"):
         raise TypeError(f"Expected pandas Series, got {type(num)}, {type(den)}")
-    
+
     den = den.fillna(0)
     out = pd.Series(np.zeros(len(num)), index=num.index, dtype="float64")
     mask = den > 0
@@ -76,7 +76,7 @@ def enforce_criteria_python(
     defer_minutes_gate: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Apply season filters and compute player minutes totals"""
-    
+
     ps = player_stats_df.copy()
     ps["season"] = _season_from_timestamp(ps["gameDate"])
     ts = team_stats_df.copy()
@@ -91,7 +91,7 @@ def enforce_criteria_python(
         "foulsPersonal","turnovers","plusMinusPoints","home","win"
     ]
     ps = _to_numeric(ps, numeric_cols)
-    
+
     for col in ["home","win"]:
         if col in ps.columns:
             ps[col] = ps[col].fillna(0).astype(int)
@@ -129,7 +129,7 @@ def compute_player_game_pie(
     rtol: float = 1e-6,
 ) -> pd.DataFrame:
     """Compute per-game PIE values"""
-    
+
     required_cols = [
         "points","fieldGoalsMade","freeThrowsMade","fieldGoalsAttempted","freeThrowsAttempted",
         "reboundsDefensive","reboundsOffensive","assists","steals","blocks","foulsPersonal","turnovers",
@@ -180,7 +180,7 @@ def compute_player_game_pie(
 # Team game calculations for PER
 def compute_team_game_totals_and_pace(filtered_player_stats: pd.DataFrame) -> pd.DataFrame:
     """Calculate team totals and pace for PER computation"""
-    
+
     df = filtered_player_stats.copy()
     if "season" not in df.columns:
         df["season"] = _season_from_timestamp(df["gameDate"])
@@ -221,7 +221,7 @@ def compute_team_game_totals_and_pace(filtered_player_stats: pd.DataFrame) -> pd
     opponent_data = team_totals.rename(columns={
         "teamCity": "oppCity", "teamName": "oppName", "team_poss": "opp_poss", "team_min": "opp_min"
     })
-    
+
     merged = team_totals.merge(
         opponent_data[["gameId","oppCity","oppName","opp_poss","opp_min"]], 
         on="gameId", how="left"
@@ -240,7 +240,7 @@ def compute_team_game_totals_and_pace(filtered_player_stats: pd.DataFrame) -> pd
         other_teams = other_teams.rename(columns={
             "team_poss_opp": "opp_poss", "team_min_opp": "opp_min"
         })[["gameId","teamCity","teamName","opp_poss","opp_min"]].drop_duplicates()
-        
+
         merged = team_totals.merge(other_teams, on=["gameId","teamCity","teamName"], how="left")
 
     # Calculate pace and assist ratio
@@ -252,7 +252,7 @@ def compute_team_game_totals_and_pace(filtered_player_stats: pd.DataFrame) -> pd
 # League constants for PER
 def compute_league_constants_per_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
     """Calculate league-wide constants for PER"""
-    
+
     tg = team_game_df.copy()
     tg["pace_x_min"] = tg["pace"] * tg["team_min"]
 
@@ -287,7 +287,7 @@ def compute_league_constants_per_season(team_game_df: pd.DataFrame) -> pd.DataFr
     ast_over_fg = _safe_div(league_stats["lgAST"], league_stats["lgFG"])
     fg_over_ft = _safe_div(league_stats["lgFG"], league_stats["lgFT"])
     league_stats["factor"] = (2.0/3.0) - _safe_div(0.5 * ast_over_fg, 2.0 * fg_over_ft)
-    
+
     league_stats["ft_per_pf"] = _safe_div(league_stats["lgFT"], league_stats["lgPF"])
     league_stats["fta_per_pf"] = _safe_div(league_stats["lgFTA"], league_stats["lgPF"])
 
@@ -301,7 +301,7 @@ def compute_player_game_per(
     drop_zero_minute_games: bool = True,
 ) -> pd.DataFrame:
     """Calculate per-game PER values"""
-    
+
     ps = filtered_player_stats.copy()
     if drop_zero_minute_games:
         ps = ps.loc[pd.to_numeric(ps["numMinutes"], errors="coerce") > 0].copy()
@@ -311,10 +311,10 @@ def compute_player_game_per(
         "fieldGoalsMade","fieldGoalsAttempted","freeThrowsMade","freeThrowsAttempted",
         "turnovers","reboundsOffensive","reboundsTotal","steals","blocks","foulsPersonal","points"
     ]
-    
+
     numeric_cols = [c for c in required_cols if c in ps.columns and c != "season"]
     ps = _to_numeric(ps, numeric_cols)
-    
+
     missing = [c for c in required_cols if c not in ps.columns]
     if missing:
         raise KeyError(f"Missing PER columns: {missing}")
@@ -356,15 +356,15 @@ def compute_player_game_per(
         + 0.5 * FT * (2.0 - tm_ast_fg / 3.0) + VOP * (1.0 - DRBP) * (TRB - ORB)
         + VOP * DRBP * ORB + VOP * STL + VOP * DRBP * BLK
     )
-    
+
     negative_box = (
         VOP * TOV + VOP * DRBP * (FGA - FG)
         + VOP * 0.44 * (0.44 + 0.56 * DRBP) * (FTA - FT)
         + PF * (ft_per_pf - 0.44 * fta_per_pf * VOP)
     )
-    
+
     uPER = _safe_div(positive_box - negative_box, MP)
-    
+
     # Pace adjustment
     pace_adj = _safe_div(lgPace, tmPace)
     aPER = uPER * pace_adj
@@ -372,7 +372,7 @@ def compute_player_game_per(
     result = ps_final[["personId","gameId","season","numMinutes"]].copy()
     result["uPER"] = pd.to_numeric(uPER, errors="coerce")
     result["aPER"] = pd.to_numeric(aPER, errors="coerce")
-    
+
     return result
 
 # NEW: BPM calculation for VORP
@@ -383,7 +383,7 @@ def compute_player_game_bpm(
     drop_zero_minute_games: bool = True,
 ) -> pd.DataFrame:
     """Calculate simplified Box Plus/Minus (BPM) for VORP computation"""
-    
+
     ps = filtered_player_stats.copy()
     if drop_zero_minute_games:
         ps = ps.loc[pd.to_numeric(ps["numMinutes"], errors="coerce") > 0].copy()
@@ -393,18 +393,18 @@ def compute_player_game_bpm(
         "steals","blocks","turnovers","foulsPersonal","fieldGoalsMade","fieldGoalsAttempted",
         "freeThrowsMade","freeThrowsAttempted","threePointersMade"
     ]
-    
+
     # Handle column name variations
     if "reboundsTotal" in ps.columns:
         ps["rebounds Total"] = ps["reboundsTotal"]
-    
+
     numeric_cols = [c for c in required_cols if c in ps.columns and c != "season"]
     ps = _to_numeric(ps, numeric_cols)
-    
+
     missing = [c for c in required_cols if c not in ps.columns]
     if missing:
         raise KeyError(f"Missing BPM columns: {missing}")
-    
+
     # Join with team data to get pace
     t_city_col, t_name_col = _resolve_player_team_cols(ps)
     ps_with_team = ps.merge(
@@ -420,10 +420,10 @@ def compute_player_game_bpm(
     # Calculate player possessions used (estimate)
     MP = pd.to_numeric(ps_final["numMinutes"], errors="coerce")
     team_pace = ps_final["pace"].fillna(100.0)
-    
+
     # Player possessions per 100 team possessions
     player_poss_per100 = 100.0 * MP / 48.0  # Approximate possessions per 100 team possessions
-    
+
     # Simplified BPM calculation based on box score stats per 100 possessions
     # This is a simplified version - full BPM requires more complex calculations
     pts_per100 = _safe_div(ps_final["points"] * 100.0, player_poss_per100)
@@ -432,11 +432,11 @@ def compute_player_game_bpm(
     stl_per100 = _safe_div(ps_final["steals"] * 100.0, player_poss_per100)
     blk_per100 = _safe_div(ps_final["blocks"] * 100.0, player_poss_per100)
     tov_per100 = _safe_div(ps_final["turnovers"] * 100.0, player_poss_per100)
-    
+
     # Calculate True Shooting Percentage
     tsa = ps_final["fieldGoalsAttempted"] + 0.44 * ps_final["freeThrowsAttempted"]
     ts_pct = _safe_div(ps_final["points"], 2.0 * tsa)
-    
+
     # Simplified BPM formula (coefficients based on statistical impact)
     # These are approximated coefficients - full BPM uses regression analysis
     # Scale to approximate BPM range (-10 to +10)
@@ -453,7 +453,7 @@ def compute_player_game_bpm(
 
     result = ps_final[["personId","gameId","season","numMinutes"]].copy()
     result["game_bpm"] = pd.to_numeric(bpm, errors="coerce").fillna(0.0)
-    
+
     return result
 
 # Season aggregation
@@ -465,9 +465,9 @@ def build_player_season_table_python(
     player_game_bpm: pd.DataFrame | None = None,  # NEW parameter for VORP/EWA
 ) -> pd.DataFrame:
     """Aggregate game-level stats to season level"""
-    
+
     pg = player_game_with_pie.copy()
-    
+
     # Convert numeric columns
     numeric_cols = [
         "numMinutes","points","assists","blocks","steals","reboundsDefensive","reboundsOffensive",
@@ -533,7 +533,7 @@ def build_player_season_table_python(
         ("pf_per36", "total_pf"),
         ("tov_per36", "total_tov"),
     ]
-    
+
     for per36_col, total_col in per36_cols:
         season_stats[per36_col] = _safe_div(season_stats[total_col] * 36.0, season_stats["total_minutes"])
 
@@ -542,7 +542,7 @@ def build_player_season_table_python(
         season_stats["total_fga"] + 0.44 * season_stats["total_fta"] + season_stats["total_tov"],
         season_stats["total_minutes"]
     )
-    
+
     season_stats["efficiency_per_game"] = _safe_div(
         (season_stats["total_points"] + season_stats["total_rebounds"] + season_stats["total_assists"]
          + season_stats["total_stls"] + season_stats["total_blocks"]
@@ -575,12 +575,12 @@ def build_player_season_table_python(
     # Find primary team for each player
     team_city_col = "playerteamCity" if "playerteamCity" in pg.columns else "playerTeamCity"
     team_name_col = "playerteamName" if "playerteamName" in pg.columns else "playerTeamName"
-    
+
     player_team_minutes = (
         pg.groupby(["personId","season",team_city_col,team_name_col], as_index=False)
           .agg(minutes_on_team=("numMinutes","sum"))
     )
-    
+
     primary_team_idx = player_team_minutes.groupby(["personId","season"])["minutes_on_team"].idxmax()
     primary_teams = player_team_minutes.loc[primary_team_idx, ["personId","season",team_city_col,team_name_col]].copy()
     primary_teams = primary_teams.rename(columns={team_city_col: "teamCity", team_name_col: "teamName"})
@@ -688,27 +688,27 @@ def build_player_season_table_python(
             bpm_aggregated[["personId","season","season_BPM"]],
             on=["personId","season"], how="left"
         )
-        
+
         # Calculate team games per season (typically 82, but can vary)
         team_games_per_season = season_final.groupby("season")["games_played"].max().reset_index()
         team_games_per_season = team_games_per_season.rename(columns={"games_played": "season_max_games"})
         season_final = season_final.merge(team_games_per_season, on="season", how="left")
-        
+
         # Calculate VORP
         # VORP = (BPM - (-2.0)) * (% of possessions played) * (team games / 82) / 2.77
         # Simplified: VORP = (BPM + 2.0) * minutes_pct * games_pct / 2.77
         replacement_level = -2.0
         minutes_in_season = season_final["total_minutes"]
         max_possible_minutes = season_final["season_max_games"] * 48  # 48 minutes per game max
-        
+
         minutes_pct = _safe_div(minutes_in_season, max_possible_minutes)
         games_pct = _safe_div(season_final["season_max_games"], pd.Series(82, index=season_final.index))
-        
+
         season_final["season_VORP"] = _safe_div(
             (season_final["season_BPM"] - replacement_level) * minutes_pct * games_pct,
             pd.Series(2.77, index=season_final.index)  # Points per win divisor
         )
-        
+
         # Calculate EWA (Estimated Wins Added)
         # EWA = VORP (since VORP is already in wins above replacement)
         season_final["season_EWA"] = season_final["season_VORP"].copy()
@@ -733,9 +733,9 @@ def rank_seasons_by_metric(
     include_context: bool = False,
 ) -> dict[str, pd.DataFrame]:
     """Rank player seasons by specified metric"""
-    
+
     df = player_season_df.copy()
-    
+
     # Define metric configurations
     metric_config = {
         "pie": {
@@ -787,13 +787,13 @@ def rank_seasons_by_metric(
             "title": "EWA"
         }
     }
-    
+
     if metric not in metric_config:
         raise ValueError(f"Metric must be one of: {list(metric_config.keys())}")
-    
+
     config = metric_config[metric]
     main_col = config["main_col"]
-    
+
     # Check required columns
     required = ["personId","player_name","season",main_col,"total_minutes","games_played"]
     missing = [c for c in required if c not in df.columns]
@@ -803,7 +803,7 @@ def rank_seasons_by_metric(
     # Set up sorting
     if tie_breaker == "duckdb" and "ts_pct" not in df.columns:
         df["ts_pct"] = np.nan
-    
+
     sort_cols = [(main_col, False), ("total_minutes", False)]
     if tie_breaker == "duckdb":
         sort_cols.append(("ts_pct", False))
@@ -814,7 +814,7 @@ def rank_seasons_by_metric(
     # Get rankings
     sort_columns = [col for col, _ in sort_cols]
     sort_ascending = [asc for _, asc in sort_cols]
-    
+
     top = df.sort_values(sort_columns, ascending=sort_ascending).head(top_n).copy()
     bottom = df.sort_values(
         [main_col] + sort_columns[1:],
@@ -832,7 +832,7 @@ def rank_seasons_by_metric(
     def format_basic_ranking(ranking_df: pd.DataFrame) -> pd.DataFrame:
         """Format basic ranking display"""
         result = ranking_df[config["display_cols"]].copy()
-        
+
         # Round numeric columns appropriately
         if main_col in result.columns:
             if metric == "pie":
@@ -844,30 +844,30 @@ def rank_seasons_by_metric(
                 result["season_PER"] = result["season_PER"].round(3)
             elif metric in ["vorp", "ewa"]:  # NEW: VORP and EWA rounding
                 result[main_col] = result[main_col].round(3)
-        
+
         if "total_minutes" in result.columns:
             result["total_minutes"] = result["total_minutes"].round(1)
-            
+
         return result.reset_index(drop=True)
 
     def format_context_ranking(ranking_df: pd.DataFrame) -> pd.DataFrame:
         """Format ranking with context columns"""
         if not include_context:
             return format_basic_ranking(ranking_df)
-            
+
         result = ranking_df.copy().reset_index(drop=True)
         result.insert(0, "Rank", range(1, len(result) + 1))
-        
+
         # Select relevant columns
         base_cols = ["Rank", "player_name", "season"]
         metric_cols = [main_col]
         if metric == "pie":
             metric_cols.append("season_pie_pct")
         context_cols = [c for c in config["context_cols"] if c in result.columns]
-        
+
         selected_cols = base_cols + metric_cols + context_cols
         result = result[[c for c in selected_cols if c in result.columns]]
-        
+
         # Apply rounding
         if metric == "pie":
             if "season_pie" in result.columns:
@@ -892,7 +892,7 @@ def rank_seasons_by_metric(
                     result[col] = result[col].round(3)
             if "ts_pct" in result.columns:
                 result["ts_pct"] = result["ts_pct"].round(3)
-        
+
         return result
 
     return {
@@ -904,32 +904,32 @@ def rank_seasons_by_metric(
 # Output formatting and export functions
 def print_rankings(player_season_df: pd.DataFrame, metric: str, **kwargs) -> dict[str, pd.DataFrame]:
     """Print formatted rankings for a metric"""
-    
+
     rankings = rank_seasons_by_metric(player_season_df, metric=metric, **kwargs)
-    
+
     metric_titles = {"pie": "PIE", "gs36": "Game Score per 36", "per": "PER"}
     title = metric_titles.get(metric, metric.upper())
-    
+
     context_suffix = " (with context)" if kwargs.get("include_context", False) else ""
-    
+
     print(f"\n=== Top 10 seasons by {title}{context_suffix} ===")
     print(rankings["top"].to_string(index=False))
     print(f"\n=== Middle 10 seasons by {title}{context_suffix} ===")
     print(rankings["middle"].to_string(index=False))
     print(f"\n=== Bottom 10 seasons by {title}{context_suffix} ===") 
     print(rankings["bottom"].to_string(index=False))
-    
+
     return rankings
 
 def format_for_submission(rankings: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     """Convert rankings to submission format (Rank, Player, Season)"""
-    
+
     def format_submission_df(df: pd.DataFrame) -> pd.DataFrame:
         result = df[["player_name","season"]].copy()
         result.insert(0, "Rank", range(1, len(result) + 1))
         result = result.rename(columns={"player_name":"Player","season":"Season"})
         return result
-    
+
     return {
         "top": format_submission_df(rankings["top"]),
         "middle": format_submission_df(rankings["middle"]),
@@ -980,7 +980,7 @@ def export_rankings(
 # Data loading functions
 def load_nba_data(table_names: Iterable[str] = IMPORTANT_TABLES) -> Dict[str, pd.DataFrame]:
     """Load NBA data tables from Kaggle"""
-    
+
     result = {}
     failed = {}
 
@@ -989,7 +989,7 @@ def load_nba_data(table_names: Iterable[str] = IMPORTANT_TABLES) -> Dict[str, pd
         if not csv_filename:
             failed[table] = "No CSV mapping found"
             continue
-            
+
         try:
             df = kh.dataset_load(
                 KDA.PANDAS, KAGGLE_DATASET, csv_filename, 
@@ -1003,7 +1003,7 @@ def load_nba_data(table_names: Iterable[str] = IMPORTANT_TABLES) -> Dict[str, pd
     if failed:
         error_msg = "\n".join([f"- {t}: {e}" for t, e in failed.items()])
         raise RuntimeError(f"Failed to load tables:\n{error_msg}")
-        
+
     return result
 
 def build_player_game_data(
@@ -1012,7 +1012,7 @@ def build_player_game_data(
     minutes_minimum: int = CFG_MIN_SEASON_MINUTES,
 ) -> pd.DataFrame:
     """Build player-game data with PIE calculations"""
-    
+
     data = load_nba_data(["PlayerStatistics","TeamStatistics"])
     _, player_stats, _ = enforce_criteria_python(
         None, data["PlayerStatistics"], data["TeamStatistics"],
@@ -1028,7 +1028,7 @@ def build_per_data(
     minutes_minimum: int = CFG_MIN_SEASON_MINUTES
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build complete PER calculation data"""
-    
+
     print("Loading data for PER calculations...")
     data = load_nba_data(["PlayerStatistics", "TeamStatistics"])
 
@@ -1058,7 +1058,7 @@ def build_vorp_ewa_data(
     minutes_minimum: int = CFG_MIN_SEASON_MINUTES
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build complete VORP and EWA calculation data"""
-    
+
     print("Loading data for VORP/EWA calculations...")
     data = load_nba_data(["PlayerStatistics", "TeamStatistics"])
 
@@ -1137,17 +1137,17 @@ if __name__ == "__main__":
                     "vorp": "season_VORP",
                     "ewa": "season_EWA"
                 }[metric]
-                
+
                 if required_col not in season_data.columns:
                     print(f"Skipping {metric.upper()} - data not available")
                     continue
 
                 print(f"\n=== {metric.upper()} Rankings ===")
-                
+
                 # Basic rankings
                 basic_rankings = rank_seasons_by_metric(season_data, metric, tie_breaker="duckdb")
                 submission_format = format_for_submission(basic_rankings)
-                
+
                 # Print and export submission format
                 title = {
                     "pie": "PIE", 
@@ -1162,12 +1162,12 @@ if __name__ == "__main__":
                 print(submission_format["middle"].to_string(index=False))
                 print(f"\n=== Bottom 10 seasons by {title} ===") 
                 print(submission_format["bottom"].to_string(index=False))
-                
+
                 export_rankings(
                     submission_format, CFG.processed_dir,
                     f"nba_{metric}_rankings", "txt"
                 )
-                
+
                 # Context rankings
                 context_rankings = rank_seasons_by_metric(
                     season_data, metric, tie_breaker="duckdb", include_context=True

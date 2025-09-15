@@ -103,7 +103,7 @@ if __name__ == "__main__":
     print(df.shape)
     # unique values for season
     print(df['season'].unique())
-    
+
 
     # df = load_data_optimized(
     #     FINAL_DATA_PATH,
