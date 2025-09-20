@@ -1,63 +1,196 @@
 {
-  "name": "docker_dev_template_uv",
-  "dockerComposeFile": ["docker-compose.yml"],
+  "name": "docker_dev_template",
+  "dockerComposeFile": "docker-compose.yml",
   "service": "datascience",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
 
+  "overrideCommand": false,
+  
+  "containerEnv": {
+    "CONTAINER_WORKSPACE_FOLDER": "/workspace",
+    "UV_PROJECT_ENVIRONMENT": "/app/.venv",
+    "VIRTUAL_ENV": "/app/.venv",
+    "PYTHONPATH": "/workspace",
+    "TERM": "xterm-256color",
+    "DEBIAN_FRONTEND": "noninteractive"
+  },
+
+  "runArgs": [
+    "--gpus", "all",
+    "--name", "${localEnv:ENV_NAME:docker_dev_template}_datascience",
+    "--shm-size", "16g"
+  ],
+
   "customizations": {
     "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.pythonPath": "/app/.venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "python.terminal.activateEnvInCurrentTerminal": true,
+        
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": ["-l"],
+            "env": {
+              "VIRTUAL_ENV": "/app/.venv",
+              "PATH": "/app/.venv/bin:${env:PATH}",
+              "UV_PROJECT_ENVIRONMENT": "/app/.venv",
+              "PYTHONPATH": "/workspace"
+            }
+          }
+        },
+        
+        "jupyter.notebookFileRoot": "/workspace",
+        "jupyter.kernels.filter": [
+          {
+            "path": "/app/.venv/bin/python",
+            "type": "pythonEnvironment"
+          }
+        ],
+        "jupyter.interactiveWindow.creationMode": "perFile",
+        
+        "files.watcherExclude": {
+          "**/.git/**": true,
+          "**/node_modules/**": true,
+          "**/__pycache__/**": true,
+          "**/.pytest_cache/**": true,
+          "**/.venv/**": true,
+          "**/videos/**": true,
+          "**/models/**": true,
+          "**/weights/**": true
+        },
+        
+        "files.associations": {
+          "*.py": "python",
+          "*.ipynb": "jupyter-notebook",
+          "*.yml": "yaml",
+          "*.yaml": "yaml",
+          "*.toml": "toml"
+        },
+
+        "python.analysis.extraPaths": [
+          "/workspace",
+          "/app/.venv/lib/python3.10/site-packages"
+        ],
+        
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.flake8Enabled": true,
+        "python.formatting.provider": "black",
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+          }
+        },
+        
+        "docker.showStartPage": false,
+        "git.autofetch": true,
+        "editor.minimap.enabled": false,
+        "workbench.colorTheme": "Default Dark+",
+        "editor.fontSize": 14,
+        "terminal.integrated.fontSize": 13
+      },
+      
       "extensions": [
         "ms-python.python",
-        "ms-python.vscode-pylance",
+        "ms-python.flake8", 
+        "ms-python.black-formatter",
         "ms-toolsai.jupyter",
-        "ms-toolsai.jupyter-renderers",
-        "nvidia.nsight-vscode-edition"
-      ],
-      "settings": {
-        "telemetry.telemetryLevel": "off",
-        "python.telemetry.enabled": false,
-        "jupyter.telemetry.enabled": false,
-        "jupyter.experiments.enabled": false,
-        "update.mode": "manual",
-        "extensions.autoUpdate": false,
-        "extensions.autoCheckUpdates": false,
-        "remote.extensionKind": {
-          "ms-python.python": ["ui"],
-          "ms-python.vscode-pylance": ["ui"],
-          "ms-toolsai.jupyter": ["ui"],
-          "ms-toolsai.jupyter-renderers": ["ui"],
-          "nvidia.nsight-vscode-edition": ["ui"]
-        },
-        "python.defaultInterpreterPath": "/app/.venv/bin/python",
-        "jupyter.interactiveWindow.textEditor.executeSelection": true,
-        "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"]
-      }
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.makefile-tools",
+        "tamasfe.even-better-toml",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-python.mypy-type-checker",
+        "ms-toolsai.vscode-ai",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-toolsai.vscode-jupyter-powertoys"
+      ]
     }
   },
 
-  "containerEnv": {
-    "UV_PROJECT_ENVIRONMENT": "/app/.venv",
-    "NVIDIA_VISIBLE_DEVICES": "all",
-    "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
-    "CUDA_STACK": "pip-cuda",
-    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so.2",
-    "MALLOC_ARENA_MAX": "1",
-    "MALLOC_TCACHE_MAX": "0",
-    "PYTORCH_NO_CUDA_MEMORY_CACHING": "1",
-    "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
-    "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.25",
-    "XLA_PYTHON_CLIENT_ALLOCATOR": "platform",
-    "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512,expandable_segments:True"
+  "onCreateCommand": {
+    "validate-environment": [
+      "bash", "-lc", 
+      "set -e && echo '[ON-CREATE] Validating environment...' && ls -la /app/.venv/bin/ || echo 'Virtual env not ready' && which python || echo 'Python not found in PATH' && echo '[ON-CREATE] Creating CV directories...' && mkdir -p /app/models /app/weights /workspace/videos/input /workspace/videos/output && echo '[ON-CREATE] Validation complete'"
+    ]
   },
 
-  "remoteEnv": {
-    "JUPYTER_ENABLE_LAB": "true",
-    "PATH": "${containerEnv:PATH}:/usr/local/cuda/bin"
+  "postCreateCommand": {
+    "setup-enhanced-environment": [
+      "bash", "-lc",
+      "set -e && echo '[POST-CREATE] Setting up enhanced development environment...' && source /app/.venv/bin/activate && echo '[POST-CREATE] Environment activated' && python -c 'import sys; print(f\"Python: {sys.executable}\")' && echo '[POST-CREATE] Installing Jupyter kernel...' && python -m ipykernel install --user --name=docker-dev-cv --display-name='Docker Dev CV Environment' && echo '[POST-CREATE] Jupyter kernel installed' && echo '[POST-CREATE] Testing core packages...' && python -c 'import torch, jax, cv2; print(\"Core packages: OK\")' && echo '[POST-CREATE] Setup completed successfully!'"
+    ]
   },
 
-  "postCreateCommand": "/bin/sh -lc 'set -e; find .devcontainer -maxdepth 1 -name \"*.sh\" -exec sed -i \"s/\\r$//\" {} \\;; chmod +x .devcontainer/*.sh; bash .devcontainer/opening.sh'",
-  "postStartCommand": "/bin/sh -lc 'set -e; find .devcontainer -maxdepth 1 -name \"*.sh\" -exec sed -i \"s/\\r$//\" {} \\;; chmod +x .devcontainer/*.sh; bash .devcontainer/opening.sh --verify-only || true'"
+  "postStartCommand": {
+    "validate-full-stack": [
+      "bash", "-lc",
+      "echo '[POST-START] Running full stack validation...' && source /app/.venv/bin/activate && echo '[POST-START] Environment activated' && python --version && echo '[POST-START] Testing GPU integration...' && python -c 'import torch; print(f\"PyTorch CUDA: {torch.cuda.is_available()}\")' || echo 'PyTorch GPU validation failed' && python -c 'import jax; gpus=[d for d in jax.devices() if \"gpu\" in str(d).lower()]; print(f\"JAX GPUs: {len(gpus)}\")' || echo 'JAX GPU validation failed' && echo '[POST-START] Container ready for development!'"
+    ]
+  },
+
+  "forwardPorts": [8888, 6008, 8050, 8501, 5000, 8080, 8554],
+  "portsAttributes": {
+    "8888": { 
+      "label": "Jupyter Lab", 
+      "onAutoForward": "notify",
+      "protocol": "http"
+    },
+    "6008": { 
+      "label": "TensorBoard", 
+      "onAutoForward": "silent",
+      "protocol": "http"
+    },
+    "8050": { 
+      "label": "Explainer Dashboard", 
+      "onAutoForward": "silent",
+      "protocol": "http"
+    },
+    "8501": { 
+      "label": "Streamlit", 
+      "onAutoForward": "silent",
+      "protocol": "http"
+    },
+    "5000": { 
+      "label": "MLflow", 
+      "onAutoForward": "silent",
+      "protocol": "http"
+    },
+    "8080": { 
+      "label": "CV API Server", 
+      "onAutoForward": "silent",
+      "protocol": "http"
+    },
+    "8554": { 
+      "label": "RTSP Stream", 
+      "onAutoForward": "silent",
+      "protocol": "rtsp"
+    }
+  },
+
+  "mounts": [
+    "source=docker_dev_template_uv_cache,target=/root/.cache/uv,type=volume",
+    "source=docker_dev_template_yolo_cache,target=/root/.cache/ultralytics,type=volume",
+    "source=docker_dev_template_roboflow_cache,target=/root/.cache/roboflow,type=volume"
+  ],
+
+  "features": {},
+  
+  "waitFor": "postCreateCommand",
+  
+  "postCreateCommand.timeout": 600,
+  "postStartCommand.timeout": 180,
+
+  "remoteUser": "root",
+  
+  "containerUser": "root"
 }
-
-
